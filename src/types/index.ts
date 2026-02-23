@@ -99,6 +99,7 @@ export interface Payment {
   fechaPago: string;
   medioPago: PaymentMethod;
   numeroOperacion?: string;
+  cuentaDeposito?: string;
   voucher?: string;
   notas?: string;
   usuarioId: number;

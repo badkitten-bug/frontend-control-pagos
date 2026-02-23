@@ -43,6 +43,8 @@ export function ClientList() {
         telefono: client.telefono || '',
         email: client.email || '',
         direccion: client.direccion || '',
+        numeroBrevete: client.numeroBrevete || '',
+        fechaVigenciaBrevete: client.fechaVigenciaBrevete || '',
       });
     } else {
       reset({
@@ -52,6 +54,8 @@ export function ClientList() {
         telefono: '',
         email: '',
         direccion: '',
+        numeroBrevete: '',
+        fechaVigenciaBrevete: '',
       });
     }
     setIsModalOpen(true);
@@ -156,6 +160,18 @@ export function ClientList() {
                   <span className="truncate">{client.direccion}</span>
                 </div>
               )}
+              {client.numeroBrevete && (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 font-medium">Brevete:</span>
+                  {client.numeroBrevete}
+                </div>
+              )}
+              {client.fechaVigenciaBrevete && (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 font-medium">Vigencia:</span>
+                  {client.fechaVigenciaBrevete}
+                </div>
+              )}
             </div>
 
             {!client.activo && (
@@ -223,6 +239,18 @@ export function ClientList() {
             label="Dirección"
             {...register('direccion')}
           />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Número de Brevete"
+              {...register('numeroBrevete')}
+            />
+            <Input
+              label="Fecha de Vigencia Brevete"
+              type="date"
+              {...register('fechaVigenciaBrevete')}
+            />
+          </div>
 
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>

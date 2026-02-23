@@ -9,7 +9,10 @@ export function MainLayout() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+          <p className="text-slate-400 text-sm animate-pulse">Cargando sesión...</p>
+        </div>
       </div>
     );
   }

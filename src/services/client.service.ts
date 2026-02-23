@@ -10,6 +10,8 @@ export interface Client {
   email?: string;
   direccion?: string;
   fechaNacimiento?: string;
+  numeroBrevete?: string;
+  fechaVigenciaBrevete?: string;
   ocupacion?: string;
   observaciones?: string;
   activo: boolean;
@@ -26,6 +28,8 @@ export interface CreateClientDto {
   email?: string;
   direccion?: string;
   fechaNacimiento?: string;
+  numeroBrevete?: string;
+  fechaVigenciaBrevete?: string;
   ocupacion?: string;
   observaciones?: string;
 }

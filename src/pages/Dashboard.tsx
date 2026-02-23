@@ -164,7 +164,7 @@ export function Dashboard() {
             Cobranzas Mensuales
           </h2>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="99%" height="100%">
               <BarChart data={stats?.cobranzasMensuales || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="mes" stroke="#94a3b8" fontSize={12} />
@@ -189,7 +189,7 @@ export function Dashboard() {
         <div className="glass rounded-xl p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Estado de Contratos</h2>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="99%" height="100%">
               <PieChart>
                 <Pie
                   data={semaforoData}

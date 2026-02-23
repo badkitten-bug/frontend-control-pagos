@@ -36,6 +36,7 @@ export const paymentService = {
     fechaPago: string;
     medioPago: string;
     numeroOperacion?: string;
+    cuentaDeposito?: string;
     notas?: string;
   }): Promise<Payment> {
     const { data } = await api.post('/payments', payment);

@@ -28,7 +28,12 @@ export function Register() {
       toast.success('Cuenta creada exitosamente!');
       navigate('/');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error al registrarse');
+      const message = error.response?.data?.message;
+      if (Array.isArray(message)) {
+        message.forEach((msg: string) => toast.error(msg));
+      } else {
+        toast.error(message || 'Error al registrarse');
+      }
     } finally {
       setIsLoading(false);
     }

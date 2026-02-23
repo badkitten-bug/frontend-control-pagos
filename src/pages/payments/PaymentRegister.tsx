@@ -131,6 +131,7 @@ export function PaymentRegister() {
         fechaPago: data.fechaPago,
         medioPago: data.medioPago,
         numeroOperacion: data.numeroOperacion,
+        cuentaDeposito: data.cuentaDeposito,
         notas: data.notas,
       });
       toast.success('Pago registrado');
@@ -221,7 +222,8 @@ export function PaymentRegister() {
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Cliente</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Tipo</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Importe</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Medio</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Medio / Cuenta</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">N° Op.</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Usuario</th>
             </tr>
           </thead>
@@ -267,7 +269,15 @@ export function PaymentRegister() {
                   <td className="px-6 py-4 text-green-400 font-medium">
                     S/ {parseFloat(payment.importe.toString()).toFixed(2)}
                   </td>
-                  <td className="px-6 py-4 text-slate-300">{payment.medioPago}</td>
+                  <td className="px-6 py-4 text-slate-300">
+                    <div>{payment.medioPago}</div>
+                    {payment.cuentaDeposito && (
+                      <div className="text-xs text-slate-500">{payment.cuentaDeposito}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-slate-300 text-sm">
+                    {payment.numeroOperacion || '-'}
+                  </td>
                   <td className="px-6 py-4 text-slate-400 text-sm">{payment.usuarioNombre}</td>
                 </tr>
               ))
@@ -351,11 +361,18 @@ export function PaymentRegister() {
             options={PAYMENT_METHODS}
             {...register('medioPago')}
           />
-          <Input
-            label="N° Operación (opcional)"
-            placeholder="000123456"
-            {...register('numeroOperacion')}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="N° Operación"
+              placeholder="000123456"
+              {...register('numeroOperacion')}
+            />
+            <Input
+              label="Cuenta de Depósito"
+              placeholder="BCP, BBVA, etc."
+              {...register('cuentaDeposito')}
+            />
+          </div>
           <Input
             label="Notas (opcional)"
             placeholder="Notas adicionales..."
