@@ -3,7 +3,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Accept build-time env var for API URL
-ARG VITE_API_URL=https://api-controlpagos.167.172.27.225.sslip.io/api
+ARG VITE_API_URL=https://api-controlpagos.sysger.com/api
 ENV VITE_API_URL=$VITE_API_URL
 
 COPY package*.json ./
