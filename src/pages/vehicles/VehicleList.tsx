@@ -58,7 +58,8 @@ export function VehicleList() {
   const onSubmit = async (data: any) => {
     try {
       if (editingVehicle) {
-        await vehicleService.update(editingVehicle.id, data);
+        const { placa, kilometraje, ...updateData } = data;
+        await vehicleService.update(editingVehicle.id, updateData);
         toast.success('Vehículo actualizado');
       } else {
         await vehicleService.create(data);

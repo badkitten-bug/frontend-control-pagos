@@ -51,6 +51,7 @@ export interface Contract {
   fechaInicio: string;
   precio: number;
   pagoInicial: number;
+  meses: number;
   numeroCuotas: number;
   frecuencia: PaymentFrequency;
   estado: ContractStatus;

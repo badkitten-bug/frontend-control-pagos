@@ -61,7 +61,7 @@ describe('contractService', () => {
         fechaInicio: '2026-01-01',
         precio: 50000,
         pagoInicial: 10000,
-        numeroCuotas: 12,
+        meses: 12,
         frecuencia: 'Mensual',
       };
       const created = { id: 1, ...contractData, estado: 'Borrador' };

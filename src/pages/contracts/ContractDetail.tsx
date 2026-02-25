@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, DollarSign, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, FileText, Ban, Edit2 } from 'lucide-react';
 import { contractService, paymentService, subcontractService } from '../../services';
 import { Button, Input, Select, StatusBadge, Modal } from '../../components/ui';
 import { SubcontractModal } from '../../components/SubcontractModal';
@@ -31,6 +31,8 @@ export function ContractDetail() {
   const [isSubcontractPaymentModalOpen, setIsSubcontractPaymentModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<PaymentSchedule | null>(null);
   const [selectedSubcontractSchedule, setSelectedSubcontractSchedule] = useState<{ subcontract: Subcontract; schedule: SubcontractSchedule } | null>(null);
+  const [isEditPagoInicialOpen, setIsEditPagoInicialOpen] = useState(false);
+  const [editPagoInicialValue, setEditPagoInicialValue] = useState('');
 
   const { register, handleSubmit, reset, setValue } = useForm();
 
@@ -100,6 +102,36 @@ export function ContractDetail() {
     }
   };
 
+  const handleAnnulContract = async () => {
+    if (!contract) return;
+    if (!confirm('¿Está seguro de ANULAR este contrato? El vehículo será liberado.')) return;
+    try {
+      await contractService.annul(contract.id);
+      toast.success('Contrato anulado');
+      loadContract(contract.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al anular contrato');
+    }
+  };
+
+  const openEditPagoInicial = () => {
+    if (!contract) return;
+    setEditPagoInicialValue(parseFloat(contract.pagoInicial.toString()).toFixed(2));
+    setIsEditPagoInicialOpen(true);
+  };
+
+  const handleSavePagoInicial = async () => {
+    if (!contract) return;
+    try {
+      await contractService.update(contract.id, { pagoInicial: parseFloat(editPagoInicialValue) } as any);
+      toast.success('Pago inicial actualizado y cronograma regenerado');
+      setIsEditPagoInicialOpen(false);
+      loadContract(contract.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al actualizar pago inicial');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pagada': return 'bg-green-500';
@@ -137,7 +169,18 @@ export function ContractDetail() {
           <p className="text-2xl font-bold text-white">S/ {parseFloat(contract.precio.toString()).toFixed(2)}</p>
         </div>
         <div className="glass rounded-xl p-6">
-          <h3 className="text-sm text-slate-400 mb-1">Pago Inicial</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm text-slate-400 mb-1">Pago Inicial</h3>
+            {contract.estado === 'Borrador' && (
+              <button
+                onClick={openEditPagoInicial}
+                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                title="Editar pago inicial"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           <p className="text-2xl font-bold text-white">
             S/ {parseFloat(contract.pagoInicial.toString()).toFixed(2)}
             {!contract.pagoInicialRegistrado && contract.pagoInicial > 0 && (
@@ -160,7 +203,7 @@ export function ContractDetail() {
       </div>
       <div className="glass rounded-xl p-4">
         <p className="text-sm text-slate-400">
-          <span className="font-medium text-white">Cuotas:</span> {contract.numeroCuotas} ({contract.frecuencia})
+          <span className="font-medium text-white">Meses:</span> {contract.meses || '-'} • <span className="font-medium text-white">Cuotas:</span> {contract.numeroCuotas} ({contract.frecuencia})
           {(contract.comisionPorcentaje ?? 0) > 0 && (
             <span className="ml-4"><span className="font-medium text-white">Comisión:</span> {contract.comisionPorcentaje}%</span>
           )}
@@ -189,6 +232,12 @@ export function ContractDetail() {
               Agregar Subcontrato
             </Button>
           )}
+          <Button variant="ghost" onClick={handleAnnulContract}
+            className="text-orange-400 hover:text-orange-300 hover:bg-orange-900/20"
+          >
+            <Ban className="w-4 h-4 mr-2" />
+            Anular Contrato
+          </Button>
         </div>
       )}
 
@@ -518,6 +567,35 @@ export function ContractDetail() {
             </div>
           </form>
         )}
+      </Modal>
+
+      {/* Edit Pago Inicial Modal */}
+      <Modal
+        isOpen={isEditPagoInicialOpen}
+        onClose={() => setIsEditPagoInicialOpen(false)}
+        title="Editar Pago Inicial"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Al cambiar el pago inicial, el cronograma de pagos se regenerará automáticamente.
+          </p>
+          <Input
+            label="Nuevo Pago Inicial"
+            type="number"
+            step="0.01"
+            value={editPagoInicialValue}
+            onChange={(e) => setEditPagoInicialValue(e.target.value)}
+          />
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="ghost" onClick={() => setIsEditPagoInicialOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSavePagoInicial}>
+              Guardar
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

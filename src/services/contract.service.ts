@@ -28,7 +28,7 @@ export const contractService = {
     fechaInicio: string;
     precio: number;
     pagoInicial: number;
-    numeroCuotas: number;
+    meses: number;
     frecuencia: string;
     comisionPorcentaje?: number;
     moraPorcentaje?: number;

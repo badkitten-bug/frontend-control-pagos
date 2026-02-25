@@ -64,7 +64,8 @@ export function ClientList() {
   const onSubmit = async (data: CreateClientDto) => {
     try {
       if (editingClient) {
-        await clientService.update(editingClient.id, data);
+        const { dni, ...updateData } = data;
+        await clientService.update(editingClient.id, updateData);
         toast.success('Cliente actualizado');
       } else {
         await clientService.create(data);

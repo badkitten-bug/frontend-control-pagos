@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Eye, Play, XCircle } from 'lucide-react';
+import { Plus, Search, Eye, Play, XCircle, Ban } from 'lucide-react';
 import { contractService, vehicleService } from '../../services';
 import { clientService, Client } from '../../services/client.service';
 import { Button, Input, StatusBadge, Modal, Select, SearchableSelect } from '../../components/ui';
@@ -102,7 +102,7 @@ export function ContractList() {
         fechaInicio: data.fechaInicio,
         precio: parseFloat(data.precio),
         pagoInicial: parseFloat(data.pagoInicial),
-        numeroCuotas: parseInt(data.numeroCuotas),
+        meses: parseInt(data.meses),
         frecuencia: data.frecuencia,
         comisionPorcentaje: data.comisionPorcentaje ? parseFloat(data.comisionPorcentaje) : 0,
         moraPorcentaje: data.moraPorcentaje ? parseFloat(data.moraPorcentaje) : 0,
@@ -139,6 +139,17 @@ export function ContractList() {
     }
   };
 
+  const handleAnnul = async (id: number) => {
+    if (!confirm('¿Está seguro de ANULAR este contrato? Esta acción liberará el vehículo.')) return;
+    try {
+      await contractService.annul(id);
+      toast.success('Contrato anulado');
+      loadContracts();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al anular');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -172,7 +183,7 @@ export function ContractList() {
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Placa</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Cliente</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Precio</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Cuotas</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Meses</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Frecuencia</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Estado</th>
               <th className="text-right px-6 py-4 text-sm font-medium text-slate-400">Acciones</th>
@@ -198,7 +209,7 @@ export function ContractList() {
                   <td className="px-6 py-4 text-slate-300">{contract.vehicle?.placa}</td>
                   <td className="px-6 py-4 text-slate-300">{contract.clienteNombre || '-'}</td>
                   <td className="px-6 py-4 text-slate-300">S/ {parseFloat(contract.precio.toString()).toFixed(2)}</td>
-                  <td className="px-6 py-4 text-slate-300">{contract.numeroCuotas}</td>
+                  <td className="px-6 py-4 text-slate-300">{contract.meses || '-'} <span className="text-xs text-slate-500">({contract.numeroCuotas} cuotas)</span></td>
                   <td className="px-6 py-4 text-slate-300">{contract.frecuencia}</td>
                   <td className="px-6 py-4">
                     <StatusBadge status={contract.estado} />
@@ -227,6 +238,15 @@ export function ContractList() {
                           title="Cancelar contrato"
                         >
                           <XCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                      {contract.estado !== 'Anulado' && (
+                        <button
+                          onClick={() => handleAnnul(contract.id)}
+                          className="p-2 text-orange-400 hover:text-orange-300 hover:bg-orange-900/20 rounded-lg transition-colors"
+                          title="Anular contrato"
+                        >
+                          <Ban className="w-4 h-4" />
                         </button>
                       )}
                     </div>
@@ -308,11 +328,11 @@ export function ContractList() {
               {...register('pagoInicial', { required: 'Requerido' })}
             />
             <Input
-              label="Número de Cuotas"
+              label="Meses"
               type="number"
-              placeholder="12"
-              error={errors.numeroCuotas?.message as string}
-              {...register('numeroCuotas', { required: 'Requerido' })}
+              placeholder="20"
+              error={errors.meses?.message as string}
+              {...register('meses', { required: 'Requerido' })}
             />
             <Select
               label="Frecuencia"
