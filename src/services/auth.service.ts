@@ -9,12 +9,10 @@ export const authService = {
     return data;
   },
 
-  async register(email: string, password: string, nombre: string, apellido?: string): Promise<AuthResponse> {
-    const { data } = await api.post<AuthResponse>('/auth/register', { 
+  async register(email: string, password: string, nombre: string, apellido?: string): Promise<{ message: string }> {
+    const { data } = await api.post<{ message: string }>('/auth/register', { 
       email, password, nombre, apellido 
     });
-    localStorage.setItem('token', data.accessToken);
-    localStorage.setItem('user', JSON.stringify(data.user));
     return data;
   },
 

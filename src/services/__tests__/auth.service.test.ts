@@ -40,11 +40,10 @@ describe('authService', () => {
   });
 
   describe('register', () => {
-    it('should post registration data and store token/user', async () => {
+    it('should post registration data and return message', async () => {
       const mockResponse = {
         data: {
-          accessToken: 'new-token',
-          user: { id: 2, email: 'new@test.com', nombre: 'New', apellido: 'User', rol: 'user' as const },
+          message: 'Cuenta creada exitosamente. Su cuenta está pendiente de aprobación por un administrador.',
         },
       };
       mockApi.post.mockResolvedValue(mockResponse);
@@ -57,7 +56,7 @@ describe('authService', () => {
         nombre: 'New',
         apellido: 'User',
       });
-      expect(localStorage.getItem('token')).toBe('new-token');
+      expect(localStorage.getItem('token')).toBeNull();
       expect(result).toEqual(mockResponse.data);
     });
   });

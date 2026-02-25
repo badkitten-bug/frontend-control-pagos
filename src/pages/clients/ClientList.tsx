@@ -64,7 +64,19 @@ export function ClientList() {
   const onSubmit = async (data: CreateClientDto) => {
     try {
       if (editingClient) {
-        const { dni, ...updateData } = data;
+        const updateData = {
+          nombres: data.nombres,
+          apellidos: data.apellidos,
+          telefono: data.telefono,
+          telefonoSecundario: data.telefonoSecundario,
+          email: data.email,
+          direccion: data.direccion,
+          fechaNacimiento: data.fechaNacimiento,
+          ocupacion: data.ocupacion,
+          numeroBrevete: data.numeroBrevete,
+          fechaVigenciaBrevete: data.fechaVigenciaBrevete,
+          observaciones: data.observaciones,
+        };
         await clientService.update(editingClient.id, updateData);
         toast.success('Cliente actualizado');
       } else {

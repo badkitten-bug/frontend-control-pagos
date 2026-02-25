@@ -31,8 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, nombre: string, apellido?: string) => {
-    const response = await authService.register(email, password, nombre, apellido);
-    setUser(response.user);
+    await authService.register(email, password, nombre, apellido);
+    // No auto-login: user must be approved by admin first
   };
 
   const logout = () => {

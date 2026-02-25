@@ -58,7 +58,14 @@ export function VehicleList() {
   const onSubmit = async (data: any) => {
     try {
       if (editingVehicle) {
-        const { placa, kilometraje, ...updateData } = data;
+        const updateData = {
+          marca: data.marca,
+          modelo: data.modelo,
+          anio: data.anio,
+          color: data.color,
+          estado: data.estado,
+          observaciones: data.observaciones,
+        };
         await vehicleService.update(editingVehicle.id, updateData);
         toast.success('Vehículo actualizado');
       } else {

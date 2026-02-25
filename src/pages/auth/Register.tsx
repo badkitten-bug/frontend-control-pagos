@@ -25,8 +25,8 @@ export function Register() {
     setIsLoading(true);
     try {
       await registerUser(data.email, data.password, data.nombre, data.apellido);
-      toast.success('Cuenta creada exitosamente!');
-      navigate('/');
+      toast.success('Cuenta creada. Pendiente de aprobación por un administrador.');
+      navigate('/login');
     } catch (error: any) {
       const message = error.response?.data?.message;
       if (Array.isArray(message)) {
