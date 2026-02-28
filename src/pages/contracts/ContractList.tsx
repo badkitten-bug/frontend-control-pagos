@@ -25,7 +25,7 @@ export function ContractList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm();
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState('');
 
@@ -391,11 +391,11 @@ export function ContractList() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>
+            <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Crear Contrato
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Creando...' : 'Crear Contrato'}
             </Button>
           </div>
         </form>
