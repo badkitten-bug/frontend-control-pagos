@@ -16,7 +16,7 @@ export function VehicleList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
   useEffect(() => {
     loadVehicles();
@@ -245,11 +245,11 @@ export function VehicleList() {
             {...register('observaciones')}
           />
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>
+            <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit">
-              {editingVehicle ? 'Guardar cambios' : 'Crear vehículo'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (editingVehicle ? 'Guardando...' : 'Creando...') : (editingVehicle ? 'Guardar cambios' : 'Crear vehículo')}
             </Button>
           </div>
         </form>

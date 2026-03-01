@@ -12,7 +12,7 @@ export function ClientList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateClientDto>();
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<CreateClientDto>();
 
   useEffect(() => {
     loadClients();
@@ -266,11 +266,11 @@ export function ClientList() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>
+            <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit">
-              {editingClient ? 'Actualizar' : 'Crear'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (editingClient ? 'Actualizando...' : 'Creando...') : (editingClient ? 'Actualizar' : 'Crear')}
             </Button>
           </div>
         </form>
