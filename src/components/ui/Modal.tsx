@@ -32,11 +32,12 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
-    xl: 'max-w-2xl',
+    // xl: usado para formularios grandes como "Nuevo Contrato"
+    xl: 'max-w-3xl',
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -46,10 +47,11 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       {/* Modal */}
       <div
         className={`
-          relative ${sizes[size]} w-full mx-4
+          relative ${sizes[size]} w-full
           bg-slate-800 rounded-xl shadow-2xl
           border border-slate-700
           animate-fade-in
+          max-h-[90vh] flex flex-col
         `}
       >
         {/* Header */}
@@ -64,7 +66,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         </div>
 
         {/* Content */}
-        <div className="px-6 py-4">{children}</div>
+        <div className="px-6 py-4 overflow-y-auto">
+          {children}
+        </div>
       </div>
     </div>
   );

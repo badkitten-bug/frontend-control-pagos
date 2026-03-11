@@ -33,11 +33,18 @@ export function ContractDetail() {
   const [selectedSubcontractSchedule, setSelectedSubcontractSchedule] = useState<{ subcontract: Subcontract; schedule: SubcontractSchedule } | null>(null);
   const [isEditPagoInicialOpen, setIsEditPagoInicialOpen] = useState(false);
   const [editPagoInicialValue, setEditPagoInicialValue] = useState('');
+  const [isEditFechaOpen, setIsEditFechaOpen] = useState(false);
+  const [editFechaValue, setEditFechaValue] = useState('');
+  const [schedulePage, setSchedulePage] = useState(1);
+  const PAGE_SIZE = 100;
 
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
 
   useEffect(() => {
-    if (id) loadContract(parseInt(id));
+    if (id) {
+      setSchedulePage(1);
+      loadContract(parseInt(id));
+    }
   }, [id]);
 
   const loadContract = async (contractId: number) => {
@@ -114,6 +121,24 @@ export function ContractDetail() {
     }
   };
 
+  const openEditFecha = () => {
+    if (!contract) return;
+    setEditFechaValue(contract.fechaInicio.split('T')[0] || contract.fechaInicio);
+    setIsEditFechaOpen(true);
+  };
+
+  const handleSaveFecha = async () => {
+    if (!contract) return;
+    try {
+      await contractService.update(contract.id, { fechaInicio: editFechaValue } as any);
+      toast.success('Fecha de inicio actualizada y cronograma regenerado');
+      setIsEditFechaOpen(false);
+      loadContract(contract.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al actualizar fecha');
+    }
+  };
+
   const openEditPagoInicial = () => {
     if (!contract) return;
     setEditPagoInicialValue(parseFloat(contract.pagoInicial.toString()).toFixed(2));
@@ -157,7 +182,24 @@ export function ContractDetail() {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-white">Contrato #{contract.id}</h1>
-          <p className="text-slate-400">{contract.vehicle?.placa} - {contract.vehicle?.marca} {contract.vehicle?.modelo}</p>
+          <p className="text-slate-400">
+            {contract.vehicle?.placa} - {contract.vehicle?.marca}{' '}
+            {contract.vehicle?.modelo}
+          </p>
+          <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
+            <span>
+              Inicio:{' '}
+              {format(new Date(contract.fechaInicio), 'dd/MM/yyyy', { locale: es })}
+            </span>
+            {contract.estado === 'Borrador' && (
+              <button
+                onClick={openEditFecha}
+                className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors"
+              >
+                Editar fecha
+              </button>
+            )}
+          </p>
         </div>
         <StatusBadge status={contract.estado} />
       </div>
@@ -241,27 +283,37 @@ export function ContractDetail() {
         </div>
       )}
 
-      {/* Schedule Grid */}
-      <div className="glass rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-700">
-          <h2 className="text-lg font-semibold text-white">Cronograma de Pagos</h2>
-        </div>
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-slate-700">
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">#</th>
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Vencimiento</th>
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Capital</th>
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Total</th>
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Pagado</th>
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Saldo</th>
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Estado</th>
-              <th className="text-right px-6 py-3 text-sm font-medium text-slate-400"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {schedule.map((item) => (
-              <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-800/50">
+      {/* Schedule + Pagos en layout de dos columnas */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr,1.3fr] gap-4 items-start">
+        {/* Schedule Grid */}
+        <div className="glass rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white">Cronograma de Pagos</h2>
+            {schedule.length > PAGE_SIZE && (
+              <span className="text-xs text-slate-400">
+                Mostrando {(schedulePage - 1) * PAGE_SIZE + 1}-
+                {Math.min(schedulePage * PAGE_SIZE, schedule.length)} de {schedule.length}
+              </span>
+            )}
+          </div>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-700">
+                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">#</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Vencimiento</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Capital</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Total</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Pagado</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Saldo</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Estado</th>
+                <th className="text-right px-6 py-3 text-sm font-medium text-slate-400"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {schedule
+                .slice((schedulePage - 1) * PAGE_SIZE, schedulePage * PAGE_SIZE)
+                .map((item) => (
+                  <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-800/50">
                 <td className="px-6 py-3 text-white">{item.numeroCuota}</td>
                 <td className="px-6 py-3 text-slate-300">
                   {format(new Date(item.fechaVencimiento), 'dd/MM/yyyy', { locale: es })}
@@ -276,53 +328,85 @@ export function ContractDetail() {
                     <StatusBadge status={item.estado} />
                   </div>
                 </td>
-                <td className="px-6 py-3 text-right">
-                  {item.estado !== 'Pagada' && contract.estado === 'Vigente' && (
-                    <Button size="sm" variant="ghost" onClick={() => openPaymentModal(item)}>
+                  <td className="px-6 py-3 text-right">
+                    {item.estado !== 'Pagada' && contract.estado === 'Vigente' && (
+                      <Button size="sm" variant="ghost" onClick={() => openPaymentModal(item)}>
                       <DollarSign className="w-4 h-4" />
                     </Button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Recent Payments */}
-      {payments.length > 0 && (
-        <div className="glass rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-700">
-            <h2 className="text-lg font-semibold text-white">Pagos Registrados</h2>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-700">
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Fecha</th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Tipo</th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Importe</th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Medio</th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Usuario</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((payment) => (
-                <tr key={payment.id} className="border-b border-slate-700/50">
-                  <td className="px-6 py-3 text-slate-300">
-                    {format(new Date(payment.fechaPago), 'dd/MM/yyyy', { locale: es })}
+                    )}
                   </td>
-                  <td className="px-6 py-3 text-slate-300">{payment.tipo}</td>
-                  <td className="px-6 py-3 text-green-400 font-medium">
-                    S/ {parseFloat(payment.importe.toString()).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-3 text-slate-300">{payment.medioPago}</td>
-                  <td className="px-6 py-3 text-slate-400">{payment.usuarioNombre}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {schedule.length > PAGE_SIZE && (
+            <div className="flex justify-between items-center px-6 py-3 text-sm text-slate-400">
+              <span>
+                Página {schedulePage} de {Math.ceil(schedule.length / PAGE_SIZE)}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSchedulePage((p) => Math.max(1, p - 1))}
+                  disabled={schedulePage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setSchedulePage((p) => Math.min(Math.ceil(schedule.length / PAGE_SIZE), p + 1))
+                  }
+                  disabled={schedulePage === Math.ceil(schedule.length / PAGE_SIZE)}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Recent Payments, a la derecha */}
+        {payments.length > 0 && (
+          <div className="glass rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Pagos Registrados</h2>
+              <span className="text-xs text-slate-400">
+                {payments.length} pago{payments.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-700">
+                  <th className="text-left px-4 py-2 text-xs font-medium text-slate-400">Fecha</th>
+                  <th className="text-left px-4 py-2 text-xs font-medium text-slate-400">Tipo</th>
+                  <th className="text-left px-4 py-2 text-xs font-medium text-slate-400">Importe</th>
+                  <th className="text-left px-4 py-2 text-xs font-medium text-slate-400">Usuario</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((payment) => (
+                  <tr key={payment.id} className="border-b border-slate-700/50">
+                    <td className="px-4 py-2 text-slate-300">
+                      {format(new Date(payment.fechaPago), 'dd/MM/yy', { locale: es })}
+                    </td>
+                    <td className="px-4 py-2 text-slate-300">{payment.tipo}</td>
+                    <td className="px-4 py-2 text-green-400 font-medium">
+                      S/ {parseFloat(payment.importe.toString()).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2 text-slate-400 truncate max-w-[120px]">
+                      {payment.usuarioNombre}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Payment Modal */}
       <Modal
@@ -595,6 +679,33 @@ export function ContractDetail() {
             <Button onClick={handleSavePagoInicial}>
               Guardar
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Fecha Inicio Modal */}
+      <Modal
+        isOpen={isEditFechaOpen}
+        onClose={() => setIsEditFechaOpen(false)}
+        title="Editar Fecha de Inicio"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Solo se puede modificar la fecha mientras el contrato está en estado
+            Borrador. El cronograma se regenerará con la nueva fecha.
+          </p>
+          <Input
+            label="Nueva Fecha de Inicio"
+            type="date"
+            value={editFechaValue}
+            onChange={(e) => setEditFechaValue(e.target.value)}
+          />
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="ghost" onClick={() => setIsEditFechaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveFecha}>Guardar</Button>
           </div>
         </div>
       </Modal>

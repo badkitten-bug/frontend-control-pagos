@@ -58,6 +58,17 @@ body {
   outline-offset: 2px;
 }
 
+/* Remove native number input spinners for consistent UI */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 /* Custom utilities */
 @layer utilities {
   .animate-fade-in {
