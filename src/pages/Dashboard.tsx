@@ -170,13 +170,19 @@ export function Dashboard() {
                 <XAxis dataKey="mes" stroke="#94a3b8" fontSize={12} />
                 <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(v) => `S/${v}`} />
                 <Tooltip
-                  contentStyle={{ 
-                    backgroundColor: '#1e293b', 
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
                     border: '1px solid #334155',
                     borderRadius: '8px',
-                    color: '#e2e8f0'
+                    color: '#e2e8f0',
                   }}
-                  formatter={(value: number | undefined) => value !== undefined ? [`S/ ${value.toFixed(2)}`, ''] : ['', '']}
+                  formatter={(value) => {
+                    const num =
+                      typeof value === 'number'
+                        ? value
+                        : Number(value ?? 0);
+                    return [`S/ ${num.toFixed(2)}`, ''];
+                  }}
                 />
                 <Bar dataKey="cobrado" name="Cobrado" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="pendiente" name="Pendiente" fill="#ef4444" radius={[4, 4, 0, 0]} />
