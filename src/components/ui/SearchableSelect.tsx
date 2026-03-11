@@ -66,6 +66,12 @@ export function SearchableSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleSelect = useCallback((optionValue: string) => {
+    onChange?.(optionValue);
+    setIsOpen(false);
+    setSearchQuery('');
+  }, [onChange]);
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!isOpen) {
@@ -97,7 +103,7 @@ export function SearchableSelect({
         setSearchQuery('');
         break;
     }
-  }, [isOpen, filteredOptions, highlightedIndex]);
+  }, [isOpen, filteredOptions, highlightedIndex, handleSelect]);
 
   // Scroll highlighted option into view
   useEffect(() => {
@@ -115,12 +121,6 @@ export function SearchableSelect({
       inputRef.current.focus();
     }
   }, [isOpen]);
-
-  const handleSelect = (optionValue: string) => {
-    onChange?.(optionValue);
-    setIsOpen(false);
-    setSearchQuery('');
-  };
 
   const clearSelection = (e: React.MouseEvent) => {
     e.stopPropagation();

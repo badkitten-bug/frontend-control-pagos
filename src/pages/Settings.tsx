@@ -46,7 +46,7 @@ export function Settings() {
     try {
       await settingsService.save(settings);
       toast.success('Configuración guardada');
-    } catch (error) {
+    } catch {
       toast.error('Error al guardar');
     } finally {
       setIsSaving(false);
@@ -69,7 +69,7 @@ export function Settings() {
       const result = await settingsService.uploadLogo(file);
       setSettings(prev => ({ ...prev, empresa_logo: result.path }));
       toast.success('Logo subido correctamente');
-    } catch (error) {
+    } catch {
       toast.error('Error al subir logo');
     }
   };

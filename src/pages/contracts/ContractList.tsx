@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Eye, Play, XCircle, Ban } from 'lucide-react';
+import { Plus, Eye, Play, XCircle, Ban } from 'lucide-react';
 import { contractService, vehicleService } from '../../services';
 import { clientService, Client } from '../../services/client.service';
 import { Button, Input, StatusBadge, Modal, Select, SearchableSelect } from '../../components/ui';
@@ -70,7 +70,7 @@ export function ContractList() {
         clienteTelefono: '',
       });
       setIsModalOpen(true);
-    } catch (error) {
+    } catch {
       toast.error('Error al cargar datos');
     }
   };

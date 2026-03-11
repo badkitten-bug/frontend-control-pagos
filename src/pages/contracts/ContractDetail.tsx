@@ -34,7 +34,7 @@ export function ContractDetail() {
   const [isEditPagoInicialOpen, setIsEditPagoInicialOpen] = useState(false);
   const [editPagoInicialValue, setEditPagoInicialValue] = useState('');
 
-  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm();
+  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
 
   useEffect(() => {
     if (id) loadContract(parseInt(id));
@@ -53,7 +53,7 @@ export function ContractDetail() {
       setSchedule(scheduleData);
       setPayments(paymentsData);
       setSubcontracts(subcontractsData);
-    } catch (error) {
+    } catch {
       toast.error('Error al cargar contrato');
     } finally {
       setIsLoading(false);

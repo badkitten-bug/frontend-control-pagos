@@ -66,13 +66,6 @@ describe('authService', () => {
       localStorage.setItem('token', 'some-token');
       localStorage.setItem('user', '{}');
 
-      // Mock window.location.href setter
-      const hrefSetter = vi.fn();
-      Object.defineProperty(window, 'location', {
-        value: { href: '' },
-        writable: true,
-      });
-
       authService.logout();
 
       expect(localStorage.getItem('token')).toBeNull();

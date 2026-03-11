@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Car, FileText, AlertTriangle, ArrowRight, Search, DollarSign, Clock, TrendingUp } from 'lucide-react';
+import { Car, FileText, AlertTriangle, Search, DollarSign, Clock, TrendingUp } from 'lucide-react';
 import { reportService } from '../services';
 import { Button, Input, StatusBadge } from '../components/ui';
 import type { QuickSearchResult, DashboardStats } from '../types';
@@ -58,7 +58,7 @@ export function Dashboard() {
       if (results.length === 0) {
         toast.error('No se encontraron vehículos con esa placa');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error al buscar');
     } finally {
       setIsSearching(false);

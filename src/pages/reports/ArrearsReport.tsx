@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Download, FileSpreadsheet, FileText, Search, Filter } from 'lucide-react';
+import { FileSpreadsheet, FileText, Search } from 'lucide-react';
 import { reportService } from '../../services';
-import { Button, Input, Select, StatusBadge } from '../../components/ui';
+import { Button, Input, Select } from '../../components/ui';
 import type { ArrearsReportItem } from '../../types';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -32,7 +32,7 @@ export function ArrearsReport() {
 
   useEffect(() => {
     loadReport();
-  }, []);
+  }, [filters]);
 
   const loadReport = async () => {
     setIsLoading(true);
@@ -57,7 +57,7 @@ export function ArrearsReport() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Excel descargado');
-    } catch (error) {
+    } catch {
       toast.error('Error al exportar');
     }
   };
@@ -72,7 +72,7 @@ export function ArrearsReport() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success('PDF descargado');
-    } catch (error) {
+    } catch {
       toast.error('Error al exportar');
     }
   };

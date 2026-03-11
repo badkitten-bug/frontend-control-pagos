@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Modal, Input, Select, Button } from './ui';
-import type { CreateSubcontractDto, PaymentFrequency } from '../types';
+import type { CreateSubcontractDto } from '../types';
 
 interface SubcontractModalProps {
   isOpen: boolean;

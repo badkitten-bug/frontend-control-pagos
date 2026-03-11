@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Edit, Eye } from 'lucide-react';
+import { Plus, Edit, Eye } from 'lucide-react';
 import { vehicleService } from '../../services';
-import { Button, Input, StatusBadge, Modal, Select } from '../../components/ui';
+import { Button, Input, StatusBadge, Modal } from '../../components/ui';
 import type { Vehicle } from '../../types';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';

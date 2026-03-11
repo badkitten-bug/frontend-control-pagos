@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import axios from 'axios';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 // We test the api module behavior by importing it fresh
 // The module uses import.meta.env.VITE_API_URL which defaults to ''

@@ -16,7 +16,7 @@ export function ClientList() {
 
   useEffect(() => {
     loadClients();
-  }, []);
+  }, [searchTerm]);
 
   const loadClients = async () => {
     try {
@@ -96,7 +96,7 @@ export function ClientList() {
       await clientService.delete(id);
       toast.success('Cliente desactivado');
       loadClients();
-    } catch (error) {
+    } catch {
       toast.error('Error al desactivar');
     }
   };

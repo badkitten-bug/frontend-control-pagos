@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, DollarSign, Calendar, Filter, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { paymentService, contractService } from '../../services';
 import { Button, Input, Select, SearchableSelect, Modal } from '../../components/ui';
 import type { Payment, Contract } from '../../types';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
-import { format, startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const PAYMENT_TYPE_OPTIONS = [
@@ -62,8 +62,8 @@ export function PaymentRegister() {
       const total = response.items.reduce((sum: number, p: Payment) => 
         sum + parseFloat(p.importe.toString()), 0);
       setFilteredTotal(total);
-    } catch (error) {
-      console.error('Error al cargar pagos:', error);
+    } catch {
+      console.error('Error al cargar pagos');
       setPayments([]);
       setTotalPages(1);
     } finally {
@@ -113,7 +113,7 @@ export function PaymentRegister() {
         tipo: 'Cuota',
       });
       setIsModalOpen(true);
-    } catch (error) {
+    } catch {
       toast.error('Error al cargar contratos');
     }
   };
