@@ -15,7 +15,7 @@ const FREQUENCY_OPTIONS = [
   { value: 'Mensual', label: 'Mensual' },
 ];
 
-type TabContract = 'en-curso' | 'anulados';
+type TabContract = 'borradores' | 'vigentes' | 'cancelados' | 'anulados';
 
 type ContractFormValues = {
   fechaInicio: string;
@@ -28,6 +28,7 @@ type ContractFormValues = {
   clienteNombre?: string;
   clienteDni?: string;
   clienteTelefono?: string;
+  clienteDireccion?: string;
 };
 
 export function ContractList() {
@@ -37,8 +38,7 @@ export function ContractList() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<TabContract>('en-curso');
-  const [estadoFilter, setEstadoFilter] = useState<string>('Todos');
+  const [tab, setTab] = useState<TabContract>('vigentes');
   const [clienteFilter, setClienteFilter] = useState('');
   const [fechaInicioDesde, setFechaInicioDesde] = useState('');
   const [fechaInicioHasta, setFechaInicioHasta] = useState('');
@@ -78,7 +78,17 @@ export function ContractList() {
         }
         break;
       case 'Semanal':
-        cuotasCalculadas = parsedMeses * 4;
+        if (watchedFechaInicio) {
+          const start = new Date(watchedFechaInicio);
+          const end = new Date(start);
+          end.setMonth(end.getMonth() + parsedMeses);
+          const diffMs = end.getTime() - start.getTime();
+          cuotasCalculadas = Math.round(diffMs / (1000 * 60 * 60 * 24 * 7));
+        } else {
+          // fallback sin fecha
+          const approxDias = parsedMeses * 30.44;
+          cuotasCalculadas = Math.round(approxDias / 7);
+        }
         break;
       case 'Quincenal':
         cuotasCalculadas = parsedMeses * 2;
@@ -95,22 +105,23 @@ export function ContractList() {
 
   useEffect(() => {
     loadContracts();
-  }, [page, search, tab, estadoFilter, clienteFilter, fechaInicioDesde, fechaInicioHasta]);
+  }, [page, search, tab, clienteFilter, fechaInicioDesde, fechaInicioHasta]);
+
+  const TAB_ESTADO: Record<TabContract, string> = {
+    borradores: 'Borrador',
+    vigentes: 'Vigente',
+    cancelados: 'Cancelado',
+    anulados: 'Anulado',
+  };
 
   const loadContracts = async () => {
     setIsLoading(true);
     try {
-      const estadoParam =
-        estadoFilter && estadoFilter !== 'Todos' ? estadoFilter : undefined;
-
       const response = await contractService.getAll({
         page,
         limit: 10,
         placa: search || undefined,
-        ...(tab === 'anulados'
-          ? { estado: 'Anulado' }
-          : { excludeEstado: 'Anulado' }),
-        estado: tab === 'anulados' ? 'Anulado' : estadoParam,
+        estado: TAB_ESTADO[tab],
         clienteNombre: clienteFilter || undefined,
         fechaInicioDesde: fechaInicioDesde || undefined,
         fechaInicioHasta: fechaInicioHasta || undefined,
@@ -142,6 +153,7 @@ export function ContractList() {
         clienteNombre: '',
         clienteDni: '',
         clienteTelefono: '',
+        clienteDireccion: '',
       });
       setIsModalOpen(true);
     } catch {
@@ -183,6 +195,7 @@ export function ContractList() {
         clienteNombre: data.clienteNombre,
         clienteDni: data.clienteDni,
         clienteTelefono: data.clienteTelefono,
+        clienteDireccion: data.clienteDireccion,
       });
       toast.success('Contrato creado');
       setIsModalOpen(false);
@@ -241,20 +254,25 @@ export function ContractList() {
       {/* Tabs + Search */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex rounded-lg bg-slate-800/80 p-1 border border-slate-700">
-          <button
-            type="button"
-            onClick={() => { setTab('en-curso'); setPage(1); }}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'en-curso' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
-          >
-            En curso
-          </button>
-          <button
-            type="button"
-            onClick={() => { setTab('anulados'); setPage(1); }}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'anulados' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
-          >
-            Anulados
-          </button>
+          {(
+            [
+              { key: 'borradores', label: 'Borradores' },
+              { key: 'vigentes',   label: 'Vigentes' },
+              { key: 'cancelados', label: 'Cancelados' },
+              { key: 'anulados',   label: 'Anulados' },
+            ] as { key: TabContract; label: string }[]
+          ).map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => { setTab(key); setPage(1); }}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                tab === key ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
         <Input
           placeholder="Buscar por placa..."
@@ -491,6 +509,11 @@ export function ContractList() {
               label="Teléfono"
               placeholder="999888777"
               {...register('clienteTelefono')}
+            />
+            <Input
+              label="Dirección"
+              placeholder="Av. Principal 123"
+              {...register('clienteDireccion')}
             />
           </div>
 

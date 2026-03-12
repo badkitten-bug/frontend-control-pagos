@@ -35,6 +35,13 @@ export function ContractDetail() {
   const [editPagoInicialValue, setEditPagoInicialValue] = useState('');
   const [isEditFechaOpen, setIsEditFechaOpen] = useState(false);
   const [editFechaValue, setEditFechaValue] = useState('');
+  const [isEditMesesFrecuenciaOpen, setIsEditMesesFrecuenciaOpen] = useState(false);
+  const [editMesesValue, setEditMesesValue] = useState('');
+  const [editFrecuenciaValue, setEditFrecuenciaValue] = useState('');
+  const [isEditPrecioOpen, setIsEditPrecioOpen] = useState(false);
+  const [editPrecioValue, setEditPrecioValue] = useState('');
+  const [editComisionValue, setEditComisionValue] = useState('');
+  const [editMoraValue, setEditMoraValue] = useState('');
   const [schedulePage, setSchedulePage] = useState(1);
   const PAGE_SIZE = 100;
 
@@ -118,6 +125,59 @@ export function ContractDetail() {
       loadContract(contract.id);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Error al anular contrato');
+    }
+  };
+
+  const openEditMesesFrecuencia = () => {
+    if (!contract) return;
+    setEditMesesValue(String(contract.meses || ''));
+    setEditFrecuenciaValue(contract.frecuencia || 'Mensual');
+    setIsEditMesesFrecuenciaOpen(true);
+  };
+
+  const handleSaveMesesFrecuencia = async () => {
+    if (!contract) return;
+    const meses = parseInt(editMesesValue);
+    if (!meses || meses <= 0) {
+      toast.error('El número de meses debe ser mayor a 0');
+      return;
+    }
+    try {
+      await contractService.update(contract.id, { meses, frecuencia: editFrecuenciaValue } as any);
+      toast.success('Plazo actualizado y cronograma regenerado');
+      setIsEditMesesFrecuenciaOpen(false);
+      loadContract(contract.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al actualizar plazo');
+    }
+  };
+
+  const openEditPrecio = () => {
+    if (!contract) return;
+    setEditPrecioValue(parseFloat(contract.precio.toString()).toFixed(2));
+    setEditComisionValue(String(contract.comisionPorcentaje ?? 0));
+    setEditMoraValue(String(contract.moraPorcentaje ?? 0));
+    setIsEditPrecioOpen(true);
+  };
+
+  const handleSavePrecio = async () => {
+    if (!contract) return;
+    const precio = parseFloat(editPrecioValue);
+    if (!precio || precio <= 0) {
+      toast.error('El precio debe ser mayor a 0');
+      return;
+    }
+    try {
+      await contractService.update(contract.id, {
+        precio,
+        comisionPorcentaje: parseFloat(editComisionValue) || 0,
+        moraPorcentaje: parseFloat(editMoraValue) || 0,
+      } as any);
+      toast.success('Precio actualizado y cronograma regenerado');
+      setIsEditPrecioOpen(false);
+      loadContract(contract.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al actualizar precio');
     }
   };
 
@@ -207,7 +267,18 @@ export function ContractDetail() {
       {/* Contract Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass rounded-xl p-6">
-          <h3 className="text-sm text-slate-400 mb-1">Precio Total</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm text-slate-400 mb-1">Precio Total</h3>
+            {contract.estado === 'Borrador' && (
+              <button
+                onClick={openEditPrecio}
+                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                title="Editar precio y comisión"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           <p className="text-2xl font-bold text-white">S/ {parseFloat(contract.precio.toString()).toFixed(2)}</p>
         </div>
         <div className="glass rounded-xl p-6">
@@ -243,7 +314,7 @@ export function ContractDetail() {
           </p>
         </div>
       </div>
-      <div className="glass rounded-xl p-4">
+      <div className="glass rounded-xl p-4 flex items-center justify-between">
         <p className="text-sm text-slate-400">
           <span className="font-medium text-white">Meses:</span> {contract.meses || '-'} • <span className="font-medium text-white">Cuotas:</span> {contract.numeroCuotas} ({contract.frecuencia})
           {(contract.comisionPorcentaje ?? 0) > 0 && (
@@ -253,6 +324,15 @@ export function ContractDetail() {
             <span className="ml-4"><span className="font-medium text-white">Mora diaria:</span> {contract.moraPorcentaje}%</span>
           )}
         </p>
+        {contract.estado === 'Borrador' && (
+          <button
+            onClick={openEditMesesFrecuencia}
+            className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors ml-4 shrink-0"
+          >
+            <Edit2 className="w-3 h-3" />
+            Editar plazo
+          </button>
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -706,6 +786,88 @@ export function ContractDetail() {
               Cancelar
             </Button>
             <Button onClick={handleSaveFecha}>Guardar</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Precio / Comisión / Mora Modal */}
+      <Modal
+        isOpen={isEditPrecioOpen}
+        onClose={() => setIsEditPrecioOpen(false)}
+        title="Editar Precio y Comisión"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Al cambiar el precio o la comisión el cronograma se regenerará automáticamente.
+          </p>
+          <Input
+            label="Precio Total (S/)"
+            type="number"
+            step="0.01"
+            min={0}
+            value={editPrecioValue}
+            onChange={(e) => setEditPrecioValue(e.target.value)}
+          />
+          <Input
+            label="Comisión (%)"
+            type="number"
+            step="0.01"
+            min={0}
+            value={editComisionValue}
+            onChange={(e) => setEditComisionValue(e.target.value)}
+          />
+          <Input
+            label="Mora diaria (%)"
+            type="number"
+            step="0.01"
+            min={0}
+            value={editMoraValue}
+            onChange={(e) => setEditMoraValue(e.target.value)}
+          />
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="ghost" onClick={() => setIsEditPrecioOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSavePrecio}>Guardar</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Meses / Frecuencia Modal */}
+      <Modal
+        isOpen={isEditMesesFrecuenciaOpen}
+        onClose={() => setIsEditMesesFrecuenciaOpen(false)}
+        title="Editar Plazo y Frecuencia"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Al cambiar los meses o la frecuencia el cronograma se regenerará automáticamente.
+          </p>
+          <Input
+            label="Meses"
+            type="number"
+            min={1}
+            value={editMesesValue}
+            onChange={(e) => setEditMesesValue(e.target.value)}
+          />
+          <Select
+            label="Frecuencia de Pago"
+            value={editFrecuenciaValue}
+            onChange={(e) => setEditFrecuenciaValue(e.target.value)}
+            options={[
+              { value: 'Diario', label: 'Diario' },
+              { value: 'Semanal', label: 'Semanal' },
+              { value: 'Quincenal', label: 'Quincenal' },
+              { value: 'Mensual', label: 'Mensual' },
+            ]}
+          />
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="ghost" onClick={() => setIsEditMesesFrecuenciaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveMesesFrecuencia}>Guardar</Button>
           </div>
         </div>
       </Modal>
