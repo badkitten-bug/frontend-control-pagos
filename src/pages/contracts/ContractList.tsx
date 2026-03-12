@@ -262,7 +262,7 @@ export function ContractList() {
       </div>
 
       {/* Tabs + Search */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-start gap-2 md:gap-3">
         <div className="flex rounded-lg bg-slate-800/80 p-1 border border-slate-700">
           {(
             [
@@ -288,13 +288,13 @@ export function ContractList() {
           placeholder="Buscar por placa..."
           value={search}
           onChange={(e) => { setSearch(e.target.value.toUpperCase()); setPage(1); }}
-          className="max-w-xs"
+          className="w-36 md:max-w-xs"
         />
         <Input
           placeholder="Buscar por cliente..."
           value={clienteFilter}
           onChange={(e) => { setClienteFilter(e.target.value); setPage(1); }}
-          className="max-w-xs"
+          className="w-36 md:max-w-xs"
         />
         <div className="flex items-center gap-2">
           <Input
@@ -324,8 +324,83 @@ export function ContractList() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="glass rounded-xl overflow-hidden">
+      {/* ── MÓVIL: cards ── */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="glass rounded-xl px-4 py-8 text-center text-slate-400">Cargando...</div>
+        ) : contracts.length === 0 ? (
+          <div className="glass rounded-xl px-4 py-8 text-center text-slate-400">No hay contratos registrados</div>
+        ) : contracts.map((contract) => (
+          <div key={contract.id} className="glass rounded-xl p-4 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <span className="text-xs text-slate-500">#{contract.id}</span>
+                <p className="text-white font-semibold text-lg leading-tight">
+                  {contract.vehicle?.placa}
+                </p>
+                <p className="text-slate-400 text-sm">{contract.vehicle?.marca} {contract.vehicle?.modelo}</p>
+              </div>
+              <StatusBadge status={contract.estado} />
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+              <div>
+                <span className="text-slate-500 text-xs">Cliente</span>
+                <p className="text-slate-300">{contract.clienteNombre || '—'}</p>
+              </div>
+              <div>
+                <span className="text-slate-500 text-xs">Precio</span>
+                <p className="text-slate-300">S/ {parseFloat(contract.precio.toString()).toFixed(2)}</p>
+              </div>
+              <div>
+                <span className="text-slate-500 text-xs">Plazo</span>
+                <p className="text-slate-300">{contract.meses || '-'} meses · {contract.numeroCuotas} cuotas</p>
+              </div>
+              <div>
+                <span className="text-slate-500 text-xs">Frecuencia</span>
+                <p className="text-slate-300">{contract.frecuencia}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pt-1 border-t border-slate-700/50">
+              <Link
+                to={`/contracts/${contract.id}`}
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white text-sm transition-colors"
+              >
+                <Eye className="w-4 h-4" /> Ver detalle
+              </Link>
+              {contract.estado === 'Borrador' && (
+                <button
+                  onClick={() => handleActivate(contract.id)}
+                  className="p-2 text-green-400 hover:bg-green-900/20 rounded-lg transition-colors"
+                  title="Activar"
+                >
+                  <Play className="w-4 h-4" />
+                </button>
+              )}
+              {contract.estado === 'Vigente' && (
+                <button
+                  onClick={() => handleCancel(contract.id)}
+                  className="p-2 text-yellow-400 hover:bg-yellow-900/20 rounded-lg transition-colors"
+                  title="Cancelar"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              )}
+              {contract.estado !== 'Anulado' && (
+                <button
+                  onClick={() => handleAnnul(contract.id)}
+                  className="p-2 text-orange-400 hover:bg-orange-900/20 rounded-lg transition-colors"
+                  title="Anular"
+                >
+                  <Ban className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── DESKTOP: tabla ── */}
+      <div className="hidden md:block glass rounded-xl overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-700">
@@ -341,17 +416,9 @@ export function ContractList() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
-                  Cargando...
-                </td>
-              </tr>
+              <tr><td colSpan={8} className="px-6 py-8 text-center text-slate-400">Cargando...</td></tr>
             ) : contracts.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
-                  No hay contratos registrados
-                </td>
-              </tr>
+              <tr><td colSpan={8} className="px-6 py-8 text-center text-slate-400">No hay contratos registrados</td></tr>
             ) : (
               contracts.map((contract) => (
                 <tr key={contract.id} className="border-b border-slate-700/50 hover:bg-slate-800/50">
@@ -361,41 +428,24 @@ export function ContractList() {
                   <td className="px-6 py-4 text-slate-300">S/ {parseFloat(contract.precio.toString()).toFixed(2)}</td>
                   <td className="px-6 py-4 text-slate-300">{contract.meses || '-'} <span className="text-xs text-slate-500">({contract.numeroCuotas} cuotas)</span></td>
                   <td className="px-6 py-4 text-slate-300">{contract.frecuencia}</td>
-                  <td className="px-6 py-4">
-                    <StatusBadge status={contract.estado} />
-                  </td>
+                  <td className="px-6 py-4"><StatusBadge status={contract.estado} /></td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Link
-                        to={`/contracts/${contract.id}`}
-                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-                      >
+                      <Link to={`/contracts/${contract.id}`} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
                         <Eye className="w-4 h-4" />
                       </Link>
                       {contract.estado === 'Borrador' && (
-                        <button
-                          onClick={() => handleActivate(contract.id)}
-                          className="p-2 text-green-400 hover:text-green-300 hover:bg-green-900/20 rounded-lg transition-colors"
-                          title="Activar contrato"
-                        >
+                        <button onClick={() => handleActivate(contract.id)} className="p-2 text-green-400 hover:text-green-300 hover:bg-green-900/20 rounded-lg transition-colors" title="Activar contrato">
                           <Play className="w-4 h-4" />
                         </button>
                       )}
                       {contract.estado === 'Vigente' && (
-                        <button
-                          onClick={() => handleCancel(contract.id)}
-                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
-                          title="Cancelar contrato"
-                        >
+                        <button onClick={() => handleCancel(contract.id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors" title="Cancelar contrato">
                           <XCircle className="w-4 h-4" />
                         </button>
                       )}
                       {contract.estado !== 'Anulado' && (
-                        <button
-                          onClick={() => handleAnnul(contract.id)}
-                          className="p-2 text-orange-400 hover:text-orange-300 hover:bg-orange-900/20 rounded-lg transition-colors"
-                          title="Anular contrato"
-                        >
+                        <button onClick={() => handleAnnul(contract.id)} className="p-2 text-orange-400 hover:text-orange-300 hover:bg-orange-900/20 rounded-lg transition-colors" title="Anular contrato">
                           <Ban className="w-4 h-4" />
                         </button>
                       )}

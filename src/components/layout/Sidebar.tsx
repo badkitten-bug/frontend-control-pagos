@@ -13,7 +13,7 @@ import {
   Settings,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
@@ -28,42 +28,29 @@ const navItems = [
   { path: '/settings', label: 'Configuración', icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+}
+
+export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  return (
-    <aside
-      className={`
-        ${isCollapsed ? 'w-16' : 'w-64'}
-        bg-slate-900 border-r border-slate-700
-        flex flex-col
-        transition-all duration-300 ease-in-out
-      `}
-    >
-      {/* Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-700">
-        {!isCollapsed && (
-          <span className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-            Control Pagos
-          </span>
-        )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-        >
-          {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
-        </button>
-      </div>
+  // Cerrar drawer al cambiar de ruta en móvil
+  useEffect(() => {
+    onMobileClose();
+  }, [location.pathname]);
 
+  const navContent = (
+    <>
       {/* Navigation */}
-      <nav className="flex-1 py-4">
+      <nav className="flex-1 py-4 overflow-y-auto">
         <ul className="space-y-1 px-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
-
             return (
               <li key={item.path}>
                 <NavLink
@@ -77,8 +64,9 @@ export function Sidebar() {
                     }
                   `}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  {!isCollapsed && <span>{item.label}</span>}
+                  <Icon className="w-5 h-5 shrink-0" />
+                  {/* En desktop colapsado solo muestra el icono */}
+                  <span className={isCollapsed ? 'hidden' : ''}>{item.label}</span>
                 </NavLink>
               </li>
             );
@@ -107,6 +95,72 @@ export function Sidebar() {
           {!isCollapsed && <span>Cerrar sesión</span>}
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ── MÓVIL: overlay + drawer deslizante ── */}
+      {/* Fondo oscuro al abrir */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+
+      {/* Drawer lateral móvil */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 w-64
+          bg-slate-900 border-r border-slate-700
+          flex flex-col
+          transition-transform duration-300 ease-in-out
+          lg:hidden
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {/* Header del drawer */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-700 shrink-0">
+          <span className="text-lg font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            Control Pagos
+          </span>
+          <button
+            onClick={onMobileClose}
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        {navContent}
+      </aside>
+
+      {/* ── DESKTOP: sidebar fijo a la izquierda ── */}
+      <aside
+        className={`
+          hidden lg:flex flex-col
+          ${isCollapsed ? 'w-16' : 'w-64'}
+          bg-slate-900 border-r border-slate-700
+          transition-all duration-300 ease-in-out
+          shrink-0
+        `}
+      >
+        {/* Header desktop */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-700 shrink-0">
+          {!isCollapsed && (
+            <span className="text-lg font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              Control Pagos
+            </span>
+          )}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+          </button>
+        </div>
+        {navContent}
+      </aside>
+    </>
   );
 }

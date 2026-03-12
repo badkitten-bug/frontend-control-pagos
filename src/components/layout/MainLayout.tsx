@@ -1,10 +1,30 @@
-import { Outlet, Navigate } from 'react-router-dom';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { Toaster } from 'react-hot-toast';
+import { useState } from 'react';
+import { Menu } from 'lucide-react';
+
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Inicio',
+  '/vehicles': 'Vehículos',
+  '/clients': 'Clientes',
+  '/contracts': 'Contratos',
+  '/payments': 'Caja',
+  '/reports': 'Atrasos',
+  '/reports/traffic-light': 'Semáforo',
+  '/reports/cartera-viva': 'Cartera Viva',
+  '/settings': 'Configuración',
+};
 
 export function MainLayout() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+
+  const pageTitle =
+    PAGE_TITLES[location.pathname] ??
+    (location.pathname.startsWith('/contracts/') ? 'Detalle Contrato' : '');
 
   if (isLoading) {
     return (
@@ -23,12 +43,30 @@ export function MainLayout() {
 
   return (
     <div className="min-h-screen flex bg-slate-900">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="p-6">
-          <Outlet />
-        </div>
-      </main>
+      <Sidebar
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
+      />
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar — solo visible en móvil */}
+        <header className="lg:hidden h-14 flex items-center gap-3 px-4 bg-slate-900 border-b border-slate-700 shrink-0">
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <span className="text-white font-semibold truncate">{pageTitle}</span>
+        </header>
+
+        <main className="flex-1 overflow-auto">
+          <div className="p-4 md:p-6">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+
       <Toaster
         position="top-right"
         toastOptions={{

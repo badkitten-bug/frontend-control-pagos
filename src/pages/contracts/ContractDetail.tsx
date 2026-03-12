@@ -308,51 +308,43 @@ export function ContractDetail() {
       </div>
 
       {/* Contract Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass rounded-xl p-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <div className="glass rounded-xl p-4 md:p-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm text-slate-400 mb-1">Precio Total</h3>
+            <h3 className="text-xs md:text-sm text-slate-400 mb-1">Precio Total</h3>
             {contract.estado === 'Borrador' && (
-              <button
-                onClick={openEditPrecio}
-                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
-                title="Editar precio y comisión"
-              >
+              <button onClick={openEditPrecio} className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors" title="Editar precio y comisión">
                 <Edit2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
-          <p className="text-2xl font-bold text-white">S/ {parseFloat(contract.precio.toString()).toFixed(2)}</p>
+          <p className="text-xl md:text-2xl font-bold text-white">S/ {parseFloat(contract.precio.toString()).toFixed(2)}</p>
         </div>
-        <div className="glass rounded-xl p-6">
+        <div className="glass rounded-xl p-4 md:p-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm text-slate-400 mb-1">Pago Inicial</h3>
+            <h3 className="text-xs md:text-sm text-slate-400 mb-1">Pago Inicial</h3>
             {contract.estado === 'Borrador' && (
-              <button
-                onClick={openEditPagoInicial}
-                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
-                title="Editar pago inicial"
-              >
+              <button onClick={openEditPagoInicial} className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors" title="Editar pago inicial">
                 <Edit2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
-          <p className="text-2xl font-bold text-white">
+          <p className="text-xl md:text-2xl font-bold text-white">
             S/ {parseFloat(contract.pagoInicial.toString()).toFixed(2)}
             {!contract.pagoInicialRegistrado && contract.pagoInicial > 0 && (
-              <span className="text-yellow-400 text-sm ml-2">(Pendiente)</span>
+              <span className="text-yellow-400 text-xs ml-1">(Pendiente)</span>
             )}
           </p>
         </div>
-        <div className="glass rounded-xl p-6">
-          <h3 className="text-sm text-slate-400 mb-1">Saldo Pendiente</h3>
-          <p className="text-2xl font-bold text-red-400">
+        <div className="glass rounded-xl p-4 md:p-6">
+          <h3 className="text-xs md:text-sm text-slate-400 mb-1">Saldo Pendiente</h3>
+          <p className="text-xl md:text-2xl font-bold text-red-400">
             S/ {schedule.reduce((sum, s) => sum + parseFloat(s.saldo?.toString() || '0'), 0).toFixed(2)}
           </p>
         </div>
-        <div className="glass rounded-xl p-6">
-          <h3 className="text-sm text-slate-400 mb-1">Total Pagado</h3>
-          <p className="text-2xl font-bold text-green-400">
+        <div className="glass rounded-xl p-4 md:p-6">
+          <h3 className="text-xs md:text-sm text-slate-400 mb-1">Total Pagado</h3>
+          <p className="text-xl md:text-2xl font-bold text-green-400">
             S/ {(payments.reduce((sum, p) => sum + parseFloat(p.importe?.toString() || '0'), 0)).toFixed(2)}
           </p>
         </div>
@@ -414,7 +406,7 @@ export function ContractDetail() {
 
       {/* Quick Actions */}
       {contract.estado !== 'Cancelado' && contract.estado !== 'Anulado' && (
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 md:gap-3">
           {!contract.pagoInicialRegistrado && contract.pagoInicial > 0 && (
             <Button onClick={() => openPaymentModal()}>
               <DollarSign className="w-4 h-4 mr-2" />
@@ -452,16 +444,17 @@ export function ContractDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-[2fr,1.3fr] gap-4 items-start">
         {/* Schedule Grid */}
         <div className="glass rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Cronograma de Pagos</h2>
+          <div className="px-4 md:px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+            <h2 className="text-base md:text-lg font-semibold text-white">Cronograma de Pagos</h2>
             {schedule.length > PAGE_SIZE && (
               <span className="text-xs text-slate-400">
-                Mostrando {(schedulePage - 1) * PAGE_SIZE + 1}-
-                {Math.min(schedulePage * PAGE_SIZE, schedule.length)} de {schedule.length}
+                {(schedulePage - 1) * PAGE_SIZE + 1}-{Math.min(schedulePage * PAGE_SIZE, schedule.length)} / {schedule.length}
               </span>
             )}
           </div>
-          <table className="w-full">
+          {/* En móvil el cronograma tiene scroll horizontal contenido */}
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px]">
             <thead>
               <tr className="border-b border-slate-700">
                 <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">#</th>
@@ -526,9 +519,10 @@ export function ContractDetail() {
               ))}
             </tbody>
           </table>
+          </div>{/* fin overflow-x-auto */}
 
           {schedule.length > PAGE_SIZE && (
-            <div className="flex justify-between items-center px-6 py-3 text-sm text-slate-400">
+            <div className="flex justify-between items-center px-4 md:px-6 py-3 text-sm text-slate-400">
               <span>
                 Página {schedulePage} de {Math.ceil(schedule.length / PAGE_SIZE)}
               </span>
