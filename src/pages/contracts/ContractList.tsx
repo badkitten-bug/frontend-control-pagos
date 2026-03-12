@@ -57,14 +57,25 @@ export function ContractList() {
   const [selectedClientId, setSelectedClientId] = useState('');
 
   const watchedMeses = useWatch({ control, name: 'meses' });
-  const watchedFrecuencia = useWatch({ control, name: 'frecuencia', defaultValue: 'Mensual' });
+  const watchedFrecuencia = useWatch({
+    control,
+    name: 'frecuencia',
+    defaultValue: 'Mensual',
+  });
+  const watchedFechaInicio = useWatch({ control, name: 'fechaInicio' });
 
   const parsedMeses = Number(watchedMeses || 0);
   let cuotasCalculadas = 0;
   if (parsedMeses > 0) {
     switch (watchedFrecuencia) {
       case 'Diario':
-        cuotasCalculadas = parsedMeses * 30;
+        if (watchedFechaInicio) {
+          const start = new Date(watchedFechaInicio);
+          const end = new Date(start);
+          end.setMonth(end.getMonth() + parsedMeses);
+          const diffMs = end.getTime() - start.getTime();
+          cuotasCalculadas = Math.round(diffMs / (1000 * 60 * 60 * 24));
+        }
         break;
       case 'Semanal':
         cuotasCalculadas = parsedMeses * 4;
