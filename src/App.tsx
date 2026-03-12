@@ -15,6 +15,7 @@ const ContractDetail = lazy(() => import('./pages/contracts/ContractDetail').the
 const PaymentRegister = lazy(() => import('./pages/payments/PaymentRegister').then(m => ({ default: m.PaymentRegister })));
 const ArrearsReport = lazy(() => import('./pages/reports/ArrearsReport').then(m => ({ default: m.ArrearsReport })));
 const TrafficLightReport = lazy(() => import('./pages/reports/TrafficLightReport').then(m => ({ default: m.TrafficLightReport })));
+const CarteraVivaReport = lazy(() => import('./pages/reports/CarteraVivaReport').then(m => ({ default: m.CarteraVivaReport })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 
 const LoadingFallback = () => (
@@ -43,6 +44,7 @@ function App() {
               <Route path="/payments" element={<PaymentRegister />} />
               <Route path="/reports" element={<ArrearsReport />} />
               <Route path="/reports/traffic-light" element={<TrafficLightReport />} />
+              <Route path="/reports/cartera-viva" element={<CarteraVivaReport />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
 

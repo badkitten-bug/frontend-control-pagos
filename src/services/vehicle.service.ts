@@ -25,8 +25,10 @@ export const vehicleService = {
     return data;
   },
 
-  async getAvailable(): Promise<Vehicle[]> {
-    const { data } = await api.get('/vehicles/available');
+  async getAvailable(excludeWithBorrador = false): Promise<Vehicle[]> {
+    const { data } = await api.get('/vehicles/available', {
+      params: excludeWithBorrador ? { excludeWithBorrador: 'true' } : undefined,
+    });
     return data;
   },
 

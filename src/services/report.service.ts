@@ -1,5 +1,5 @@
 import api from './api';
-import type { ArrearsReportItem, QuickSearchResult, TrafficLightItem, SemaforoStatus, DashboardStats } from '../types';
+import type { ArrearsReportItem, CarteraVivaItem, QuickSearchResult, TrafficLightItem, SemaforoStatus, DashboardStats } from '../types';
 
 export const reportService = {
   async getArrearsReport(params?: {
@@ -57,6 +57,14 @@ export const reportService = {
     frecuencia?: string;
   }): Promise<TrafficLightItem[]> {
     const { data } = await api.get('/reports/traffic-light', { params });
+    return data;
+  },
+
+  async getCarteraViva(params?: {
+    placa?: string;
+    frecuencia?: string;
+  }): Promise<CarteraVivaItem[]> {
+    const { data } = await api.get('/reports/cartera-viva', { params });
     return data;
   },
 };

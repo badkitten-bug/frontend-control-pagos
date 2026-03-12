@@ -9,6 +9,7 @@ import {
   Menu,
   X,
   CircleDot,
+  Wallet,
   Settings,
   Users,
 } from 'lucide-react';
@@ -23,6 +24,7 @@ const navItems = [
   { path: '/payments', label: 'Caja', icon: CreditCard },
   { path: '/reports', label: 'Atrasos', icon: BarChart3 },
   { path: '/reports/traffic-light', label: 'Semáforo', icon: CircleDot },
+  { path: '/reports/cartera-viva', label: 'Cartera Viva', icon: Wallet },
   { path: '/settings', label: 'Configuración', icon: Settings },
 ];
 

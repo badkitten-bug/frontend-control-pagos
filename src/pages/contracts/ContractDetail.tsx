@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, DollarSign, FileText, Ban, Edit2 } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, FileText, Ban, Edit2, XCircle } from 'lucide-react';
 import { contractService, paymentService, subcontractService } from '../../services';
 import { Button, Input, Select, StatusBadge, Modal } from '../../components/ui';
 import { SubcontractModal } from '../../components/SubcontractModal';
 import type { Contract, PaymentSchedule, Payment, Subcontract, CreateSubcontractDto, SubcontractSchedule } from '../../types';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
-import { format, isBefore, startOfDay } from 'date-fns';
+import { format, isBefore, startOfDay, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const PAYMENT_METHODS = [
@@ -42,6 +42,11 @@ export function ContractDetail() {
   const [editPrecioValue, setEditPrecioValue] = useState('');
   const [editComisionValue, setEditComisionValue] = useState('');
   const [editMoraValue, setEditMoraValue] = useState('');
+  const [isEditClienteOpen, setIsEditClienteOpen] = useState(false);
+  const [editClienteNombre, setEditClienteNombre] = useState('');
+  const [editClienteDni, setEditClienteDni] = useState('');
+  const [editClienteTelefono, setEditClienteTelefono] = useState('');
+  const [editClienteDireccion, setEditClienteDireccion] = useState('');
   const [schedulePage, setSchedulePage] = useState(1);
   const PAGE_SIZE = 100;
 
@@ -116,6 +121,18 @@ export function ContractDetail() {
     }
   };
 
+  const handleCancelContract = async () => {
+    if (!contract) return;
+    if (!confirm('¿Está seguro de CANCELAR este contrato? El vehículo quedará disponible.')) return;
+    try {
+      await contractService.cancel(contract.id);
+      toast.success('Contrato cancelado');
+      loadContract(contract.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al cancelar contrato');
+    }
+  };
+
   const handleAnnulContract = async () => {
     if (!contract) return;
     if (!confirm('¿Está seguro de ANULAR este contrato? El vehículo será liberado.')) return;
@@ -149,6 +166,32 @@ export function ContractDetail() {
       loadContract(contract.id);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Error al actualizar plazo');
+    }
+  };
+
+  const openEditCliente = () => {
+    if (!contract) return;
+    setEditClienteNombre(contract.clienteNombre || '');
+    setEditClienteDni(contract.clienteDni || '');
+    setEditClienteTelefono(contract.clienteTelefono || '');
+    setEditClienteDireccion(contract.clienteDireccion || '');
+    setIsEditClienteOpen(true);
+  };
+
+  const handleSaveCliente = async () => {
+    if (!contract) return;
+    try {
+      await contractService.update(contract.id, {
+        clienteNombre: editClienteNombre,
+        clienteDni: editClienteDni,
+        clienteTelefono: editClienteTelefono,
+        clienteDireccion: editClienteDireccion,
+      } as any);
+      toast.success('Datos del cliente actualizados');
+      setIsEditClienteOpen(false);
+      loadContract(contract.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al actualizar cliente');
     }
   };
 
@@ -335,6 +378,40 @@ export function ContractDetail() {
         )}
       </div>
 
+      {/* Datos del Cliente */}
+      <div className="glass rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-slate-300">Datos del Cliente</h3>
+          {contract.estado !== 'Anulado' && (
+            <button
+              onClick={openEditCliente}
+              className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors"
+            >
+              <Edit2 className="w-3 h-3" />
+              Editar
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div>
+            <span className="text-slate-500 block text-xs">Nombre</span>
+            <span className="text-white">{contract.clienteNombre || <span className="text-slate-500 italic">—</span>}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs">DNI</span>
+            <span className="text-white">{contract.clienteDni || <span className="text-slate-500 italic">—</span>}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs">Teléfono</span>
+            <span className="text-white">{contract.clienteTelefono || <span className="text-slate-500 italic">—</span>}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs">Dirección</span>
+            <span className="text-white">{contract.clienteDireccion || <span className="text-slate-500 italic">—</span>}</span>
+          </div>
+        </div>
+      </div>
+
       {/* Quick Actions */}
       {contract.estado !== 'Cancelado' && contract.estado !== 'Anulado' && (
         <div className="flex gap-3">
@@ -352,6 +429,14 @@ export function ContractDetail() {
             <Button variant="secondary" onClick={() => setIsSubcontractModalOpen(true)}>
               <FileText className="w-4 h-4 mr-2" />
               Agregar Subcontrato
+            </Button>
+          )}
+          {contract.estado === 'Vigente' && (
+            <Button variant="ghost" onClick={handleCancelContract}
+              className="text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20"
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              Cancelar Contrato
             </Button>
           )}
           <Button variant="ghost" onClick={handleAnnulContract}
@@ -385,6 +470,9 @@ export function ContractDetail() {
                 <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Total</th>
                 <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Pagado</th>
                 <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Saldo</th>
+                {(contract.moraPorcentaje ?? 0) > 0 && (
+                  <th className="text-left px-6 py-3 text-sm font-medium text-orange-400">Mora</th>
+                )}
                 <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">Estado</th>
                 <th className="text-right px-6 py-3 text-sm font-medium text-slate-400"></th>
               </tr>
@@ -402,6 +490,25 @@ export function ContractDetail() {
                 <td className="px-6 py-3 text-slate-300">S/ {parseFloat(item.total.toString()).toFixed(2)}</td>
                 <td className="px-6 py-3 text-slate-300">S/ {parseFloat(item.montoPagado.toString()).toFixed(2)}</td>
                 <td className="px-6 py-3 text-white font-medium">S/ {parseFloat(item.saldo.toString()).toFixed(2)}</td>
+                {(contract.moraPorcentaje ?? 0) > 0 && (() => {
+                  const moraPct = contract.moraPorcentaje ?? 0;
+                  const mora = item.estado === 'Vencida'
+                    ? Math.round(
+                        parseFloat(item.saldo.toString()) *
+                        (moraPct / 100) *
+                        differenceInDays(new Date(), new Date(item.fechaVencimiento)) *
+                        100
+                      ) / 100
+                    : 0;
+                  return (
+                    <td className="px-6 py-3">
+                      {mora > 0
+                        ? <span className="text-orange-400 font-medium">S/ {mora.toFixed(2)}</span>
+                        : <span className="text-slate-600">—</span>
+                      }
+                    </td>
+                  );
+                })()}
                 <td className="px-6 py-3">
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${getStatusColor(item.estado)}`} />
@@ -786,6 +893,27 @@ export function ContractDetail() {
               Cancelar
             </Button>
             <Button onClick={handleSaveFecha}>Guardar</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Cliente Modal */}
+      <Modal
+        isOpen={isEditClienteOpen}
+        onClose={() => setIsEditClienteOpen(false)}
+        title="Editar Datos del Cliente"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Nombre" value={editClienteNombre} onChange={(e) => setEditClienteNombre(e.target.value)} />
+            <Input label="DNI" value={editClienteDni} onChange={(e) => setEditClienteDni(e.target.value)} />
+            <Input label="Teléfono" value={editClienteTelefono} onChange={(e) => setEditClienteTelefono(e.target.value)} />
+            <Input label="Dirección" value={editClienteDireccion} onChange={(e) => setEditClienteDireccion(e.target.value)} />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="ghost" onClick={() => setIsEditClienteOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveCliente}>Guardar</Button>
           </div>
         </div>
       </Modal>

@@ -140,7 +140,7 @@ export function ContractList() {
   const handleCreate = async () => {
     try {
       const [vehicles, clientList] = await Promise.all([
-        vehicleService.getAvailable(),
+        vehicleService.getAvailable(true),
         clientService.getActive(),
       ]);
       setAvailableVehicles(vehicles);
@@ -182,12 +182,22 @@ export function ContractList() {
       toast.error('Seleccione un vehículo');
       return;
     }
+    const precio = parseFloat(data.precio);
+    const pagoInicial = parseFloat(data.pagoInicial);
+    if (pagoInicial >= precio) {
+      toast.error('El pago inicial no puede ser mayor o igual al precio total');
+      return;
+    }
+    if (excedeMaxCuotas) {
+      toast.error(`Demasiadas cuotas (${cuotasCalculadas}). Reduce los meses o cambia la frecuencia.`);
+      return;
+    }
     try {
       await contractService.create({
         vehicleId: parseInt(selectedVehicleId),
         fechaInicio: data.fechaInicio,
-        precio: parseFloat(data.precio),
-        pagoInicial: parseFloat(data.pagoInicial),
+        precio,
+        pagoInicial,
         meses: parseInt(data.meses),
         frecuencia: data.frecuencia,
         comisionPorcentaje: data.comisionPorcentaje ? parseFloat(data.comisionPorcentaje) : 0,
@@ -197,7 +207,7 @@ export function ContractList() {
         clienteTelefono: data.clienteTelefono,
         clienteDireccion: data.clienteDireccion,
       });
-      toast.success('Contrato creado');
+      toast.success('Contrato creado exitosamente');
       setIsModalOpen(false);
       loadContracts();
     } catch (error: any) {
@@ -277,9 +287,41 @@ export function ContractList() {
         <Input
           placeholder="Buscar por placa..."
           value={search}
-          onChange={(e) => setSearch(e.target.value.toUpperCase())}
+          onChange={(e) => { setSearch(e.target.value.toUpperCase()); setPage(1); }}
           className="max-w-xs"
         />
+        <Input
+          placeholder="Buscar por cliente..."
+          value={clienteFilter}
+          onChange={(e) => { setClienteFilter(e.target.value); setPage(1); }}
+          className="max-w-xs"
+        />
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            value={fechaInicioDesde}
+            onChange={(e) => { setFechaInicioDesde(e.target.value); setPage(1); }}
+            className="w-36"
+            title="Fecha inicio desde"
+          />
+          <span className="text-slate-500 text-sm">–</span>
+          <Input
+            type="date"
+            value={fechaInicioHasta}
+            onChange={(e) => { setFechaInicioHasta(e.target.value); setPage(1); }}
+            className="w-36"
+            title="Fecha inicio hasta"
+          />
+          {(clienteFilter || fechaInicioDesde || fechaInicioHasta) && (
+            <button
+              type="button"
+              onClick={() => { setClienteFilter(''); setFechaInicioDesde(''); setFechaInicioHasta(''); setPage(1); }}
+              className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-700 transition-colors"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -424,7 +466,10 @@ export function ContractList() {
               step="0.01"
               placeholder="10000.00"
               error={errors.precio?.message as string}
-              {...register('precio', { required: 'Requerido' })}
+              {...register('precio', {
+                required: 'El precio es requerido',
+                min: { value: 0.01, message: 'Debe ser mayor a 0' },
+              })}
             />
             <Input
               label="Pago Inicial"
@@ -432,14 +477,21 @@ export function ContractList() {
               step="0.01"
               placeholder="2000.00"
               error={errors.pagoInicial?.message as string}
-              {...register('pagoInicial', { required: 'Requerido' })}
+              {...register('pagoInicial', {
+                required: 'El pago inicial es requerido',
+                min: { value: 0, message: 'No puede ser negativo' },
+              })}
             />
             <Input
               label="Meses"
               type="number"
               placeholder="20"
               error={errors.meses?.message as string}
-              {...register('meses', { required: 'Requerido', min: { value: 1, message: 'Debe ser mayor a 0' } })}
+              {...register('meses', {
+                required: 'Los meses son requeridos',
+                min: { value: 1, message: 'Mínimo 1 mes' },
+                max: { value: 240, message: 'Máximo 240 meses (20 años)' },
+              })}
             />
             <Select
               label="Frecuencia"

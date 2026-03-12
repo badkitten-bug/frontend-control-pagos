@@ -162,6 +162,24 @@ export interface TrafficLightItem {
   ultimoPago: string | null;
 }
 
+export interface CarteraVivaItem {
+  contractId: number;
+  placa: string;
+  marca: string;
+  modelo: string;
+  clienteNombre: string;
+  clienteTelefono: string;
+  frecuencia: PaymentFrequency;
+  fechaInicio: string;
+  numeroCuotas: number;
+  cuotasPendientes: number;
+  cuotasVencidas: number;
+  saldoTotal: number;
+  montoVencido: number;
+  proximaFecha: string | null;
+  proximoMonto: number | null;
+}
+
 // Pagination types
 export interface PaginatedResponse<T> {
   items: T[];
