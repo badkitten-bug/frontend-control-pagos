@@ -7,6 +7,9 @@ export const contractService = {
     limit?: number;
     placa?: string;
     estado?: string;
+    excludeEstado?: string;
+    fechaInicioDesde?: string;
+    fechaInicioHasta?: string;
     clienteNombre?: string;
   }): Promise<PaginatedResponse<Contract>> {
     const { data } = await api.get('/contracts', { params });

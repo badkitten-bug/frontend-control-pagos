@@ -6,7 +6,7 @@ import { clientService, Client } from '../../services/client.service';
 import { Button, Input, StatusBadge, Modal, Select, SearchableSelect } from '../../components/ui';
 import type { Contract, Vehicle } from '../../types';
 import toast from 'react-hot-toast';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 const FREQUENCY_OPTIONS = [
   { value: 'Diario', label: 'Diario' },
@@ -15,6 +15,21 @@ const FREQUENCY_OPTIONS = [
   { value: 'Mensual', label: 'Mensual' },
 ];
 
+type TabContract = 'en-curso' | 'anulados';
+
+type ContractFormValues = {
+  fechaInicio: string;
+  precio: string;
+  pagoInicial: string;
+  meses: string;
+  frecuencia: string;
+  comisionPorcentaje?: string;
+  moraPorcentaje?: string;
+  clienteNombre?: string;
+  clienteDni?: string;
+  clienteTelefono?: string;
+};
+
 export function ContractList() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [availableVehicles, setAvailableVehicles] = useState<Vehicle[]>([]);
@@ -22,24 +37,72 @@ export function ContractList() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
+  const [tab, setTab] = useState<TabContract>('en-curso');
+  const [estadoFilter, setEstadoFilter] = useState<string>('Todos');
+  const [clienteFilter, setClienteFilter] = useState('');
+  const [fechaInicioDesde, setFechaInicioDesde] = useState('');
+  const [fechaInicioHasta, setFechaInicioHasta] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
 
-  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    control,
+    formState: { errors, isSubmitting },
+  } = useForm<ContractFormValues>();
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState('');
 
+  const watchedMeses = useWatch({ control, name: 'meses' });
+  const watchedFrecuencia = useWatch({ control, name: 'frecuencia', defaultValue: 'Mensual' });
+
+  const parsedMeses = Number(watchedMeses || 0);
+  let cuotasCalculadas = 0;
+  if (parsedMeses > 0) {
+    switch (watchedFrecuencia) {
+      case 'Diario':
+        cuotasCalculadas = parsedMeses * 30;
+        break;
+      case 'Semanal':
+        cuotasCalculadas = parsedMeses * 4;
+        break;
+      case 'Quincenal':
+        cuotasCalculadas = parsedMeses * 2;
+        break;
+      case 'Mensual':
+      default:
+        cuotasCalculadas = parsedMeses;
+        break;
+    }
+  }
+
+  const MAX_CUOTAS = 2000;
+  const excedeMaxCuotas = cuotasCalculadas > MAX_CUOTAS;
+
   useEffect(() => {
     loadContracts();
-  }, [page, search]);
+  }, [page, search, tab, estadoFilter, clienteFilter, fechaInicioDesde, fechaInicioHasta]);
 
   const loadContracts = async () => {
     setIsLoading(true);
     try {
+      const estadoParam =
+        estadoFilter && estadoFilter !== 'Todos' ? estadoFilter : undefined;
+
       const response = await contractService.getAll({
         page,
         limit: 10,
         placa: search || undefined,
+        ...(tab === 'anulados'
+          ? { estado: 'Anulado' }
+          : { excludeEstado: 'Anulado' }),
+        estado: tab === 'anulados' ? 'Anulado' : estadoParam,
+        clienteNombre: clienteFilter || undefined,
+        fechaInicioDesde: fechaInicioDesde || undefined,
+        fechaInicioHasta: fechaInicioHasta || undefined,
       });
       setContracts(response.items);
       setTotalPages(response.totalPages);
@@ -164,8 +227,24 @@ export function ContractList() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="flex gap-3">
+      {/* Tabs + Search */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex rounded-lg bg-slate-800/80 p-1 border border-slate-700">
+          <button
+            type="button"
+            onClick={() => { setTab('en-curso'); setPage(1); }}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'en-curso' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
+          >
+            En curso
+          </button>
+          <button
+            type="button"
+            onClick={() => { setTab('anulados'); setPage(1); }}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'anulados' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
+          >
+            Anulados
+          </button>
+        </div>
         <Input
           placeholder="Buscar por placa..."
           value={search}
@@ -301,7 +380,6 @@ export function ContractList() {
             }))}
             value={selectedVehicleId}
             onChange={setSelectedVehicleId}
-            error={!selectedVehicleId && errors.vehicleId ? 'Seleccione un vehículo' : undefined}
           />
           
           <div className="grid grid-cols-2 gap-4">
@@ -332,7 +410,7 @@ export function ContractList() {
               type="number"
               placeholder="20"
               error={errors.meses?.message as string}
-              {...register('meses', { required: 'Requerido' })}
+              {...register('meses', { required: 'Requerido', min: { value: 1, message: 'Debe ser mayor a 0' } })}
             />
             <Select
               label="Frecuencia"
@@ -356,6 +434,21 @@ export function ContractList() {
               {...register('moraPorcentaje')}
             />
           </div>
+
+          {cuotasCalculadas > 0 && (
+            <p
+              className={`text-sm mt-1 ${
+                excedeMaxCuotas ? 'text-red-400' : 'text-slate-400'
+              }`}
+            >
+              Se generarán aproximadamente{' '}
+              <span className="font-semibold">{cuotasCalculadas}</span>{' '}
+              cuotas{' '}
+              {watchedFrecuencia === 'Diario' && '(pagos diarios)'}.
+              {excedeMaxCuotas &&
+                ` Máximo permitido: ${MAX_CUOTAS}. Reduce los meses o cambia la frecuencia.`}
+            </p>
+          )}
 
           <h4 className="font-medium text-white pt-2">Datos del Cliente</h4>
           <SearchableSelect
