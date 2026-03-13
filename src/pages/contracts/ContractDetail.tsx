@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Plus, DollarSign, FileText, Ban, Edit2, XCircle, RefreshCw } from 'lucide-react';
 import { contractService, paymentService, subcontractService } from '../../services';
-import { Button, Input, Select, StatusBadge, Modal } from '../../components/ui';
+import { Button, Input, Select, StatusBadge, Modal, ConfirmModal, Tooltip } from '../../components/ui';
 import { SubcontractModal } from '../../components/SubcontractModal';
 import type { Contract, PaymentSchedule, Payment, Subcontract, CreateSubcontractDto, SubcontractSchedule } from '../../types';
 import toast from 'react-hot-toast';
@@ -50,6 +50,19 @@ export function ContractDetail() {
   const [editClienteDireccion, setEditClienteDireccion] = useState('');
   const [schedulePage, setSchedulePage] = useState(1);
   const PAGE_SIZE = 100;
+
+  const [confirm, setConfirm] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    variant: 'danger' | 'warning' | 'info';
+    confirmLabel: string;
+    onConfirm: () => void;
+  }>({ open: false, title: '', message: '', variant: 'warning', confirmLabel: 'Confirmar', onConfirm: () => {} });
+
+  const askConfirm = (opts: Omit<typeof confirm, 'open'>) =>
+    setConfirm({ open: true, ...opts });
+  const closeConfirm = () => setConfirm(c => ({ ...c, open: false }));
 
   const { register, handleSubmit, reset, formState: { isSubmitting, errors: paymentErrors } } = useForm();
 
@@ -122,40 +135,64 @@ export function ContractDetail() {
     }
   };
 
-  const handleCancelContract = async () => {
+  const handleCancelContract = () => {
     if (!contract) return;
-    if (!confirm('¿Está seguro de CANCELAR este contrato? El vehículo quedará disponible.')) return;
-    try {
-      await contractService.cancel(contract.id);
-      toast.success('Contrato cancelado');
-      loadContract(contract.id);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error al cancelar contrato');
-    }
+    askConfirm({
+      title: 'Cancelar contrato',
+      message: 'El contrato pasará a estado Cancelado y el vehículo quedará disponible. Esta acción no se puede deshacer.',
+      variant: 'warning',
+      confirmLabel: 'Sí, cancelar',
+      onConfirm: async () => {
+        try {
+          await contractService.cancel(contract.id);
+          toast.success('Contrato cancelado');
+          closeConfirm();
+          loadContract(contract.id);
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Error al cancelar contrato');
+        }
+      },
+    });
   };
 
-  const handleAnnulContract = async () => {
+  const handleAnnulContract = () => {
     if (!contract) return;
-    if (!confirm('¿Está seguro de ANULAR este contrato? El vehículo será liberado.')) return;
-    try {
-      await contractService.annul(contract.id);
-      toast.success('Contrato anulado');
-      loadContract(contract.id);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error al anular contrato');
-    }
+    askConfirm({
+      title: 'Anular contrato',
+      message: 'El contrato quedará ANULADO (nulo, como si no hubiera existido). El vehículo será liberado y sus pagos no aparecerán en Caja.',
+      variant: 'danger',
+      confirmLabel: 'Sí, anular',
+      onConfirm: async () => {
+        try {
+          await contractService.annul(contract.id);
+          toast.success('Contrato anulado');
+          closeConfirm();
+          loadContract(contract.id);
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Error al anular contrato');
+        }
+      },
+    });
   };
 
-  const handleRebuildSchedule = async () => {
+  const handleRebuildSchedule = () => {
     if (!contract) return;
-    if (!confirm('¿Recalcular las fechas de cuotas pendientes? Las cuotas ya pagadas no se tocan.')) return;
-    try {
-      await contractService.rebuildSchedule(contract.id);
-      toast.success('Cronograma recalculado correctamente');
-      loadContract(contract.id);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error al recalcular cronograma');
-    }
+    askConfirm({
+      title: 'Recalcular cronograma',
+      message: 'Se recalcularán las fechas de todas las cuotas pendientes. Las cuotas ya pagadas no se modifican.',
+      variant: 'info',
+      confirmLabel: 'Recalcular',
+      onConfirm: async () => {
+        try {
+          await contractService.rebuildSchedule(contract.id);
+          toast.success('Cronograma recalculado correctamente');
+          closeConfirm();
+          loadContract(contract.id);
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Error al recalcular cronograma');
+        }
+      },
+    });
   };
 
   const openEditMesesFrecuencia = () => {
@@ -421,42 +458,53 @@ export function ContractDetail() {
       {contract.estado !== 'Cancelado' && contract.estado !== 'Anulado' && (
         <div className="flex flex-wrap gap-2 md:gap-3">
           {!contract.pagoInicialRegistrado && contract.pagoInicial > 0 && (
-            <Button onClick={() => openPaymentModal()}>
-              <DollarSign className="w-4 h-4 mr-2" />
-              Registrar Pago Inicial
-            </Button>
+            <Tooltip text="Registra el pago de entrada del contrato">
+              <Button onClick={() => openPaymentModal()}>
+                <DollarSign className="w-4 h-4 mr-2" />
+                Registrar Pago Inicial
+              </Button>
+            </Tooltip>
           )}
-          <Button variant="secondary" onClick={() => openPaymentModal()}>
-            <Plus className="w-4 h-4 mr-2" />
-            Registrar Pago
-          </Button>
-          {contract.estado === 'Vigente' && (
-            <Button variant="secondary" onClick={() => setIsSubcontractModalOpen(true)}>
-              <FileText className="w-4 h-4 mr-2" />
-              Agregar Subcontrato
+          <Tooltip text="Registra un abono o cuota del cronograma">
+            <Button variant="secondary" onClick={() => openPaymentModal()}>
+              <Plus className="w-4 h-4 mr-2" />
+              Registrar Pago
             </Button>
+          </Tooltip>
+          {contract.estado === 'Vigente' && (
+            <Tooltip text="Agrega un seguro, GPS u otro cargo adicional al contrato">
+              <Button variant="secondary" onClick={() => setIsSubcontractModalOpen(true)}>
+                <FileText className="w-4 h-4 mr-2" />
+                Agregar Subcontrato
+              </Button>
+            </Tooltip>
           )}
           {contract.estado === 'Vigente' && (
-            <Button variant="ghost" onClick={handleCancelContract}
-              className="text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20"
+            <Tooltip text="Cancelar: el contrato termina antes de tiempo, los pagos quedan en Caja">
+              <Button variant="ghost" onClick={handleCancelContract}
+                className="text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20"
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                Cancelar Contrato
+              </Button>
+            </Tooltip>
+          )}
+          <Tooltip text="Anular: el contrato se invalida completamente, sus pagos NO aparecen en Caja">
+            <Button variant="ghost" onClick={handleAnnulContract}
+              className="text-orange-400 hover:text-orange-300 hover:bg-orange-900/20"
             >
-              <XCircle className="w-4 h-4 mr-2" />
-              Cancelar Contrato
+              <Ban className="w-4 h-4 mr-2" />
+              Anular Contrato
             </Button>
-          )}
-          <Button variant="ghost" onClick={handleAnnulContract}
-            className="text-orange-400 hover:text-orange-300 hover:bg-orange-900/20"
-          >
-            <Ban className="w-4 h-4 mr-2" />
-            Anular Contrato
-          </Button>
-          <Button variant="ghost" onClick={handleRebuildSchedule}
-            className="text-sky-400 hover:text-sky-300 hover:bg-sky-900/20"
-            title="Corrige las fechas de cuotas pendientes sin tocar las pagadas"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Recalcular Fechas
-          </Button>
+          </Tooltip>
+          <Tooltip text="Corrige las fechas de cuotas pendientes sin modificar las ya pagadas">
+            <Button variant="ghost" onClick={handleRebuildSchedule}
+              className="text-sky-400 hover:text-sky-300 hover:bg-sky-900/20"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Recalcular Fechas
+            </Button>
+          </Tooltip>
         </div>
       )}
 
@@ -1019,6 +1067,17 @@ export function ContractDetail() {
           </div>
         </div>
       </Modal>
+
+      {/* Modal de confirmación reutilizable */}
+      <ConfirmModal
+        isOpen={confirm.open}
+        onClose={closeConfirm}
+        onConfirm={confirm.onConfirm}
+        title={confirm.title}
+        message={confirm.message}
+        variant={confirm.variant}
+        confirmLabel={confirm.confirmLabel}
+      />
     </div>
   );
 }

@@ -5,3 +5,5 @@ export { SearchableSelect } from './SearchableSelect';
 export type { SearchableSelectOption } from './SearchableSelect';
 export { Badge, StatusBadge } from './Badge';
 export { Modal } from './Modal';
+export { ConfirmModal } from './ConfirmModal';
+export { Tooltip } from './Tooltip';

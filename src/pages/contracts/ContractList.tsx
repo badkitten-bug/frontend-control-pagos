@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Eye, Play, XCircle, Ban } from 'lucide-react';
 import { contractService, vehicleService } from '../../services';
 import { clientService, Client } from '../../services/client.service';
-import { Button, Input, StatusBadge, Modal, Select, SearchableSelect } from '../../components/ui';
+import { Button, Input, StatusBadge, Modal, Select, SearchableSelect, ConfirmModal, Tooltip } from '../../components/ui';
 import type { Contract, Vehicle } from '../../types';
 import toast from 'react-hot-toast';
 import { useForm, useWatch } from 'react-hook-form';
@@ -45,6 +45,13 @@ export function ContractList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
   const [activarInmediatamente, setActivarInmediatamente] = useState(false);
+  const [confirmList, setConfirmList] = useState<{
+    open: boolean; title: string; message: string;
+    variant: 'danger' | 'warning'; confirmLabel: string; onConfirm: () => void;
+  }>({ open: false, title: '', message: '', variant: 'warning', confirmLabel: 'Confirmar', onConfirm: () => {} });
+  const askConfirmList = (opts: Omit<typeof confirmList, 'open'>) =>
+    setConfirmList({ open: true, ...opts });
+  const closeConfirmList = () => setConfirmList(c => ({ ...c, open: false }));
 
   const {
     register,
@@ -236,26 +243,42 @@ export function ContractList() {
     }
   };
 
-  const handleCancel = async (id: number) => {
-    if (!confirm('¿Está seguro de cancelar este contrato?')) return;
-    try {
-      await contractService.cancel(id);
-      toast.success('Contrato cancelado');
-      loadContracts();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error al cancelar');
-    }
+  const handleCancel = (id: number) => {
+    askConfirmList({
+      title: 'Cancelar contrato',
+      message: 'El contrato terminará antes de tiempo. El vehículo quedará disponible y los pagos se mantienen en Caja.',
+      variant: 'warning',
+      confirmLabel: 'Sí, cancelar',
+      onConfirm: async () => {
+        try {
+          await contractService.cancel(id);
+          toast.success('Contrato cancelado');
+          closeConfirmList();
+          loadContracts();
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Error al cancelar');
+        }
+      },
+    });
   };
 
-  const handleAnnul = async (id: number) => {
-    if (!confirm('¿Está seguro de ANULAR este contrato? Esta acción liberará el vehículo.')) return;
-    try {
-      await contractService.annul(id);
-      toast.success('Contrato anulado');
-      loadContracts();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error al anular');
-    }
+  const handleAnnul = (id: number) => {
+    askConfirmList({
+      title: 'Anular contrato',
+      message: 'El contrato quedará nulo e inválido. El vehículo será liberado y sus pagos NO aparecerán en Caja.',
+      variant: 'danger',
+      confirmLabel: 'Sí, anular',
+      onConfirm: async () => {
+        try {
+          await contractService.annul(id);
+          toast.success('Contrato anulado');
+          closeConfirmList();
+          loadContracts();
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Error al anular');
+        }
+      },
+    });
   };
 
   return (
@@ -442,23 +465,31 @@ export function ContractList() {
                   <td className="px-6 py-4"><StatusBadge status={contract.estado} /></td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Link to={`/contracts/${contract.id}`} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
-                        <Eye className="w-4 h-4" />
-                      </Link>
+                      <Tooltip text="Ver detalle" position="top">
+                        <Link to={`/contracts/${contract.id}`} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors inline-flex">
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                      </Tooltip>
                       {contract.estado === 'Borrador' && (
-                        <button onClick={() => handleActivate(contract.id)} className="p-2 text-green-400 hover:text-green-300 hover:bg-green-900/20 rounded-lg transition-colors" title="Activar contrato">
-                          <Play className="w-4 h-4" />
-                        </button>
+                        <Tooltip text="Activar contrato" position="top">
+                          <button onClick={() => handleActivate(contract.id)} className="p-2 text-green-400 hover:text-green-300 hover:bg-green-900/20 rounded-lg transition-colors">
+                            <Play className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
                       )}
                       {contract.estado === 'Vigente' && (
-                        <button onClick={() => handleCancel(contract.id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors" title="Cancelar contrato">
-                          <XCircle className="w-4 h-4" />
-                        </button>
+                        <Tooltip text="Cancelar: termina el contrato, pagos quedan en Caja" position="top">
+                          <button onClick={() => handleCancel(contract.id)} className="p-2 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20 rounded-lg transition-colors">
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
                       )}
                       {contract.estado !== 'Anulado' && (
-                        <button onClick={() => handleAnnul(contract.id)} className="p-2 text-orange-400 hover:text-orange-300 hover:bg-orange-900/20 rounded-lg transition-colors" title="Anular contrato">
-                          <Ban className="w-4 h-4" />
-                        </button>
+                        <Tooltip text="Anular: invalida el contrato, pagos NO aparecen en Caja" position="top">
+                          <button onClick={() => handleAnnul(contract.id)} className="p-2 text-orange-400 hover:text-orange-300 hover:bg-orange-900/20 rounded-lg transition-colors">
+                            <Ban className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
                       )}
                     </div>
                   </td>
@@ -665,6 +696,16 @@ export function ContractList() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={confirmList.open}
+        onClose={closeConfirmList}
+        onConfirm={confirmList.onConfirm}
+        title={confirmList.title}
+        message={confirmList.message}
+        variant={confirmList.variant}
+        confirmLabel={confirmList.confirmLabel}
+      />
     </div>
   );
 }
