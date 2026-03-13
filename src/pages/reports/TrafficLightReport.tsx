@@ -5,6 +5,7 @@ import { reportService } from '../../services';
 import { Button, Input, Select } from '../../components/ui';
 import type { TrafficLightItem, SemaforoStatus } from '../../types';
 import { format } from 'date-fns';
+import { parseDate } from '../../utils/date';
 import { es } from 'date-fns/locale';
 
 const FREQUENCY_OPTIONS = [
@@ -243,7 +244,7 @@ export function TrafficLightReport() {
                   </td>
                   <td className="px-6 py-4 text-slate-300">
                     {item.ultimoPago
-                      ? format(new Date(item.ultimoPago), 'dd/MM/yyyy', { locale: es })
+                      ? format(parseDate(item.ultimoPago), 'dd/MM/yyyy', { locale: es })
                       : 'Sin pagos'}
                   </td>
                   <td className="px-6 py-4 text-right">

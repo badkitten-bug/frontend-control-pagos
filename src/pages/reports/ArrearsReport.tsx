@@ -6,6 +6,7 @@ import type { ArrearsReportItem } from '../../types';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { parseDate } from '../../utils/date';
 
 const FREQUENCY_OPTIONS = [
   { value: '', label: 'Todas' },
@@ -197,7 +198,7 @@ export function ArrearsReport() {
                   </td>
                   <td className="px-6 py-4 text-slate-300">
                     {item.ultimoPago.fecha 
-                      ? format(new Date(item.ultimoPago.fecha), 'dd/MM/yyyy', { locale: es })
+                      ? format(parseDate(item.ultimoPago.fecha), 'dd/MM/yyyy', { locale: es })
                       : 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-slate-300">{item.frecuencia}</td>

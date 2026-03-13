@@ -5,6 +5,7 @@ import { Button, Input, Select } from '../../components/ui';
 import type { CarteraVivaItem } from '../../types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { parseDate } from '../../utils/date';
 
 const FREQUENCY_OPTIONS = [
   { value: '', label: 'Todas' },
@@ -157,7 +158,7 @@ export function CarteraVivaReport() {
                   <td className="px-4 py-3 text-slate-300 text-sm">
                     {row.proximaFecha
                       ? <>
-                          <div>{format(new Date(row.proximaFecha), 'dd/MM/yyyy', { locale: es })}</div>
+                          <div>{format(parseDate(row.proximaFecha), 'dd/MM/yyyy', { locale: es })}</div>
                           {row.proximoMonto && (
                             <div className="text-xs text-slate-500">S/ {row.proximoMonto.toFixed(2)}</div>
                           )}

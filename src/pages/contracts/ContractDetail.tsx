@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, DollarSign, FileText, Ban, Edit2, XCircle } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, FileText, Ban, Edit2, XCircle, RefreshCw } from 'lucide-react';
 import { contractService, paymentService, subcontractService } from '../../services';
 import { Button, Input, Select, StatusBadge, Modal } from '../../components/ui';
 import { SubcontractModal } from '../../components/SubcontractModal';
@@ -8,6 +8,7 @@ import type { Contract, PaymentSchedule, Payment, Subcontract, CreateSubcontract
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { format, isBefore, startOfDay, differenceInDays } from 'date-fns';
+import { parseDate } from '../../utils/date';
 import { es } from 'date-fns/locale';
 
 const PAYMENT_METHODS = [
@@ -50,7 +51,7 @@ export function ContractDetail() {
   const [schedulePage, setSchedulePage] = useState(1);
   const PAGE_SIZE = 100;
 
-  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
+  const { register, handleSubmit, reset, formState: { isSubmitting, errors: paymentErrors } } = useForm();
 
   useEffect(() => {
     if (id) {
@@ -142,6 +143,18 @@ export function ContractDetail() {
       loadContract(contract.id);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Error al anular contrato');
+    }
+  };
+
+  const handleRebuildSchedule = async () => {
+    if (!contract) return;
+    if (!confirm('¿Recalcular las fechas de cuotas pendientes? Las cuotas ya pagadas no se tocan.')) return;
+    try {
+      await contractService.rebuildSchedule(contract.id);
+      toast.success('Cronograma recalculado correctamente');
+      loadContract(contract.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al recalcular cronograma');
     }
   };
 
@@ -292,7 +305,7 @@ export function ContractDetail() {
           <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
             <span>
               Inicio:{' '}
-              {format(new Date(contract.fechaInicio), 'dd/MM/yyyy', { locale: es })}
+              {format(parseDate(contract.fechaInicio), 'dd/MM/yyyy', { locale: es })}
             </span>
             {contract.estado === 'Borrador' && (
               <button
@@ -437,6 +450,13 @@ export function ContractDetail() {
             <Ban className="w-4 h-4 mr-2" />
             Anular Contrato
           </Button>
+          <Button variant="ghost" onClick={handleRebuildSchedule}
+            className="text-sky-400 hover:text-sky-300 hover:bg-sky-900/20"
+            title="Corrige las fechas de cuotas pendientes sin tocar las pagadas"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Recalcular Fechas
+          </Button>
         </div>
       )}
 
@@ -477,7 +497,7 @@ export function ContractDetail() {
                   <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-800/50">
                 <td className="px-6 py-3 text-white">{item.numeroCuota}</td>
                 <td className="px-6 py-3 text-slate-300">
-                  {format(new Date(item.fechaVencimiento), 'dd/MM/yyyy', { locale: es })}
+                  {format(parseDate(item.fechaVencimiento), 'dd/MM/yyyy', { locale: es })}
                 </td>
                 <td className="px-6 py-3 text-slate-300">S/ {parseFloat(item.capital.toString()).toFixed(2)}</td>
                 <td className="px-6 py-3 text-slate-300">S/ {parseFloat(item.total.toString()).toFixed(2)}</td>
@@ -489,7 +509,7 @@ export function ContractDetail() {
                     ? Math.round(
                         parseFloat(item.saldo.toString()) *
                         (moraPct / 100) *
-                        differenceInDays(new Date(), new Date(item.fechaVencimiento)) *
+                        differenceInDays(new Date(), parseDate(item.fechaVencimiento)) *
                         100
                       ) / 100
                     : 0;
@@ -572,7 +592,7 @@ export function ContractDetail() {
                 {payments.map((payment) => (
                   <tr key={payment.id} className="border-b border-slate-700/50">
                     <td className="px-4 py-2 text-slate-300">
-                      {format(new Date(payment.fechaPago), 'dd/MM/yy', { locale: es })}
+                      {format(parseDate(payment.fechaPago), 'dd/MM/yy', { locale: es })}
                     </td>
                     <td className="px-4 py-2 text-slate-300">{payment.tipo}</td>
                     <td className="px-4 py-2 text-green-400 font-medium">
@@ -606,13 +626,19 @@ export function ContractDetail() {
             <Input
               label="Fecha de Pago"
               type="date"
-              {...register('fechaPago')}
+              error={paymentErrors.fechaPago?.message as string}
+              {...register('fechaPago', { required: 'Fecha requerida' })}
             />
             <Input
-              label="Importe"
+              label="Importe (S/)"
               type="number"
               step="0.01"
-              {...register('importe')}
+              min="0.01"
+              error={paymentErrors.importe?.message as string}
+              {...register('importe', {
+                required: 'Ingrese el importe',
+                min: { value: 0.01, message: 'Debe ser mayor a 0' },
+              })}
             />
           </div>
           <Select
@@ -663,7 +689,7 @@ export function ContractDetail() {
                       <p className="text-sm text-slate-400 mt-1">{sub.descripcion}</p>
                     )}
                     <p className="text-sm text-slate-500 mt-1">
-                      Creado: {format(new Date(sub.createdAt), 'dd/MM/yyyy', { locale: es })}
+                      Creado: {format(parseDate(sub.createdAt), 'dd/MM/yyyy', { locale: es })}
                     </p>
                   </div>
                   <div className="text-right">
@@ -687,12 +713,12 @@ export function ContractDetail() {
                     </div>
                     {sub.cronograma.map((cuota) => {
                       const isPayable = cuota.estado !== 'Pagada' && 
-                        (cuota.estado === 'Vencida' || isBefore(new Date(cuota.fechaVencimiento), startOfDay(new Date())) || 
+                        (cuota.estado === 'Vencida' || isBefore(parseDate(cuota.fechaVencimiento), startOfDay(new Date())) || 
                          cuota.fechaVencimiento <= new Date().toISOString().split('T')[0]);
                       return (
                         <div key={cuota.id} className="grid grid-cols-7 gap-2 text-sm py-1 border-t border-slate-700/30 items-center">
                           <span className="text-white">{cuota.numeroCuota}</span>
-                          <span className="text-slate-300">{format(new Date(cuota.fechaVencimiento), 'dd/MM/yy')}</span>
+                          <span className="text-slate-300">{format(parseDate(cuota.fechaVencimiento), 'dd/MM/yy')}</span>
                           <span className="text-slate-300">S/ {parseFloat(cuota.monto.toString()).toFixed(2)}</span>
                           <span className="text-slate-300">S/ {parseFloat(cuota.montoPagado.toString()).toFixed(2)}</span>
                           <span className="text-white font-medium">S/ {parseFloat(cuota.saldo.toString()).toFixed(2)}</span>

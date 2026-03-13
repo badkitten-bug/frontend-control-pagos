@@ -65,6 +65,11 @@ export const contractService = {
     return data;
   },
 
+  async rebuildSchedule(id: number): Promise<Contract> {
+    const { data } = await api.patch(`/contracts/${id}/rebuild-schedule`);
+    return data;
+  },
+
   async getSchedule(contractId: number): Promise<PaymentSchedule[]> {
     const { data } = await api.get(`/payment-schedules/contract/${contractId}`);
     return data;

@@ -4,6 +4,7 @@ import { paymentService, contractService } from '../../services';
 import { Button, Input, Select, SearchableSelect, Modal } from '../../components/ui';
 import type { Payment, Contract } from '../../types';
 import toast from 'react-hot-toast';
+import { parseDate } from '../../utils/date';
 import { useForm } from 'react-hook-form';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -63,7 +64,7 @@ export function PaymentRegister() {
         sum + parseFloat(p.importe.toString()), 0);
       setFilteredTotal(total);
     } catch {
-      console.error('Error al cargar pagos');
+      toast.error('Error al cargar los pagos');
       setPayments([]);
       setTotalPages(1);
     } finally {
@@ -244,7 +245,7 @@ export function PaymentRegister() {
               payments.map((payment) => (
                 <tr key={payment.id} className="border-b border-slate-700/50 hover:bg-slate-800/50">
                   <td className="px-6 py-4 text-slate-300">
-                    {format(new Date(payment.fechaPago), 'dd/MM/yyyy', { locale: es })}
+                    {format(parseDate(payment.fechaPago), 'dd/MM/yyyy', { locale: es })}
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-white">#{payment.contractId}</span>

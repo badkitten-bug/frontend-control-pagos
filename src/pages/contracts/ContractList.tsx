@@ -44,6 +44,7 @@ export function ContractList() {
   const [fechaInicioHasta, setFechaInicioHasta] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
+  const [activarInmediatamente, setActivarInmediatamente] = useState(false);
 
   const {
     register,
@@ -102,6 +103,10 @@ export function ContractList() {
 
   const MAX_CUOTAS = 2000;
   const excedeMaxCuotas = cuotasCalculadas > MAX_CUOTAS;
+  const esFechaPasada =
+    watchedFechaInicio
+      ? new Date(watchedFechaInicio + 'T12:00:00') < new Date(new Date().getFullYear(), 0, 1)
+      : false;
 
   useEffect(() => {
     loadContracts();
@@ -147,6 +152,7 @@ export function ContractList() {
       setClients(clientList);
       setSelectedVehicleId('');
       setSelectedClientId('');
+      setActivarInmediatamente(false);
       reset({
         fechaInicio: new Date().toISOString().split('T')[0],
         frecuencia: 'Mensual',
@@ -193,7 +199,7 @@ export function ContractList() {
       return;
     }
     try {
-      await contractService.create({
+      const created = await contractService.create({
         vehicleId: parseInt(selectedVehicleId),
         fechaInicio: data.fechaInicio,
         precio,
@@ -207,7 +213,12 @@ export function ContractList() {
         clienteTelefono: data.clienteTelefono,
         clienteDireccion: data.clienteDireccion,
       });
-      toast.success('Contrato creado exitosamente');
+      if (activarInmediatamente) {
+        await contractService.activate(created.id);
+        toast.success('Contrato creado y activado');
+      } else {
+        toast.success('Contrato creado como borrador');
+      }
       setIsModalOpen(false);
       loadContracts();
     } catch (error: any) {
@@ -507,6 +518,7 @@ export function ContractList() {
             <Input
               label="Fecha Inicio"
               type="date"
+              min="2000-01-01"
               error={errors.fechaInicio?.message as string}
               {...register('fechaInicio', { required: 'Requerido' })}
             />
@@ -580,6 +592,30 @@ export function ContractList() {
                 ` Máximo permitido: ${MAX_CUOTAS}. Reduce los meses o cambia la frecuencia.`}
             </p>
           )}
+
+          {esFechaPasada && (
+            <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 text-sm text-amber-300">
+              <p className="font-medium mb-1">📋 Migración desde registros anteriores</p>
+              <p className="text-amber-400/80">
+                Las cuotas anteriores a hoy quedarán en estado <strong>Vencida</strong>.
+                Puedes registrar los pagos históricos desde el detalle del contrato.
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 py-1">
+            <input
+              id="activarInmediatamente"
+              type="checkbox"
+              checked={activarInmediatamente}
+              onChange={e => setActivarInmediatamente(e.target.checked)}
+              className="w-4 h-4 rounded accent-indigo-500 cursor-pointer"
+            />
+            <label htmlFor="activarInmediatamente" className="text-sm text-slate-300 cursor-pointer">
+              Activar contrato inmediatamente{' '}
+              <span className="text-slate-500">(sin pasar por Borrador)</span>
+            </label>
+          </div>
 
           <h4 className="font-medium text-white pt-2">Datos del Cliente</h4>
           <SearchableSelect
