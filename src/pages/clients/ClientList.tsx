@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Search, Edit2, Trash2, Phone, Mail, MapPin } from 'lucide-react';
+import { Users, Plus, Search, Edit2, Phone, Mail, MapPin, Power } from 'lucide-react';
 import { clientService, Client, CreateClientDto } from '../../services/client.service';
-import { Button, Input, Modal } from '../../components/ui';
+import { Button, Input, Modal, ConfirmModal, Tooltip } from '../../components/ui';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
@@ -9,18 +9,29 @@ export function ClientList() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [confirm, setConfirm] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    variant: 'danger' | 'warning' | 'info';
+    confirmLabel: string;
+    onConfirm: () => void;
+  }>({ open: false, title: '', message: '', variant: 'warning', confirmLabel: 'Confirmar', onConfirm: () => {} });
+  const askConfirm = (opts: Omit<typeof confirm, 'open'>) => setConfirm({ open: true, ...opts });
+  const closeConfirm = () => setConfirm(c => ({ ...c, open: false }));
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<CreateClientDto>();
 
   useEffect(() => {
     loadClients();
-  }, [searchTerm]);
+  }, [searchTerm, showInactive]);
 
   const loadClients = async () => {
     try {
-      const data = await clientService.getAll(searchTerm || undefined);
+      const data = await clientService.getAll(searchTerm || undefined, showInactive ? undefined : true);
       setClients(data);
     } catch (error) {
       console.error('Error loading clients:', error);
@@ -90,15 +101,26 @@ export function ClientList() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Desactivar este cliente?')) return;
-    try {
-      await clientService.delete(id);
-      toast.success('Cliente desactivado');
-      loadClients();
-    } catch {
-      toast.error('Error al desactivar');
-    }
+  const handleToggleActive = (client: Client) => {
+    const willActivate = !client.activo;
+    askConfirm({
+      title: willActivate ? 'Activar cliente' : 'Desactivar cliente',
+      message: willActivate
+        ? 'El cliente volverá a estar ACTIVO y aparecerá al crear contratos.'
+        : 'El cliente quedará INACTIVO y ya no aparecerá al crear contratos.',
+      variant: willActivate ? 'info' : 'warning',
+      confirmLabel: willActivate ? 'Sí, activar' : 'Sí, desactivar',
+      onConfirm: async () => {
+        try {
+          await clientService.toggleActive(client.id);
+          toast.success(willActivate ? 'Cliente activado' : 'Cliente desactivado');
+          closeConfirm();
+          loadClients();
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Error al cambiar estado');
+        }
+      },
+    });
   };
 
   return (
@@ -119,7 +141,7 @@ export function ClientList() {
       </div>
 
       {/* Search */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-wrap items-center">
         <div className="flex-1">
           <Input
             placeholder="Buscar por DNI, nombre o teléfono..."
@@ -131,6 +153,18 @@ export function ClientList() {
         <Button variant="secondary" onClick={handleSearch}>
           <Search className="w-4 h-4" />
         </Button>
+        <div className="flex items-center gap-2">
+          <input
+            id="showInactive"
+            type="checkbox"
+            checked={showInactive}
+            onChange={(e) => setShowInactive(e.target.checked)}
+            className="w-4 h-4 rounded accent-indigo-500"
+          />
+          <label htmlFor="showInactive" className="text-sm text-slate-300 cursor-pointer">
+            Mostrar inactivos
+          </label>
+        </div>
       </div>
 
       {/* Client Grid */}
@@ -145,12 +179,16 @@ export function ClientList() {
                 <p className="text-sm text-slate-400">DNI: {client.dni}</p>
               </div>
               <div className="flex gap-1">
-                <Button size="sm" variant="ghost" onClick={() => openModal(client)}>
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleDelete(client.id)}>
-                  <Trash2 className="w-4 h-4 text-red-400" />
-                </Button>
+                <Tooltip text="Editar" position="top">
+                  <Button size="sm" variant="ghost" onClick={() => openModal(client)}>
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                </Tooltip>
+                <Tooltip text={client.activo ? 'Desactivar' : 'Activar'} position="top">
+                  <Button size="sm" variant="ghost" onClick={() => handleToggleActive(client)}>
+                    <Power className={`w-4 h-4 ${client.activo ? 'text-yellow-400' : 'text-green-400'}`} />
+                  </Button>
+                </Tooltip>
               </div>
             </div>
 
@@ -275,6 +313,16 @@ export function ClientList() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={confirm.open}
+        onClose={closeConfirm}
+        onConfirm={confirm.onConfirm}
+        title={confirm.title}
+        message={confirm.message}
+        variant={confirm.variant}
+        confirmLabel={confirm.confirmLabel}
+      />
     </div>
   );
 }

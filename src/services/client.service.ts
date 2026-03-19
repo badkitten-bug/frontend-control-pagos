@@ -35,8 +35,10 @@ export interface CreateClientDto {
 }
 
 export const clientService = {
-  getAll: async (search?: string): Promise<Client[]> => {
-    const params = search ? { search } : {};
+  getAll: async (search?: string, activo?: boolean): Promise<Client[]> => {
+    const params: Record<string, any> = {};
+    if (search) params.search = search;
+    if (activo !== undefined) params.activo = activo;
     const response = await api.get('/clients', { params });
     return response.data;
   },
@@ -68,5 +70,10 @@ export const clientService = {
 
   delete: async (id: number): Promise<void> => {
     await api.delete(`/clients/${id}`);
+  },
+
+  toggleActive: async (id: number): Promise<Client> => {
+    const response = await api.patch(`/clients/${id}/toggle-active`);
+    return response.data;
   },
 };
