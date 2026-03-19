@@ -31,7 +31,7 @@ export function ClientList() {
 
   const loadClients = async () => {
     try {
-      const data = await clientService.getAll(searchTerm || undefined, showInactive ? undefined : true);
+      const data = await clientService.getAll(searchTerm || undefined, showInactive ? false : true);
       setClients(data);
     } catch (error) {
       console.error('Error loading clients:', error);
