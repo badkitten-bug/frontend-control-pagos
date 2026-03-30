@@ -34,10 +34,10 @@ export function PaymentRegister() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState('');
   
-  // Date filters
-  const today = new Date().toISOString().split('T')[0];
-  const [fechaDesde, setFechaDesde] = useState(today);
-  const [fechaHasta, setFechaHasta] = useState(today);
+  // Date filters — use format() from date-fns for LOCAL date (avoids UTC offset on Peru UTC-5)
+  const todayLocal = () => format(new Date(), 'yyyy-MM-dd');
+  const [fechaDesde, setFechaDesde] = useState(todayLocal);
+  const [fechaHasta, setFechaHasta] = useState(todayLocal);
   const [filteredTotal, setFilteredTotal] = useState(0);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
@@ -58,11 +58,8 @@ export function PaymentRegister() {
       setPayments(response.items);
       setTotalPages(response.totalPages);
       setTotalItems(response.total);
-      
-      // Calculate total for filtered period
-      const total = response.items.reduce((sum: number, p: Payment) => 
-        sum + parseFloat(p.importe.toString()), 0);
-      setFilteredTotal(total);
+      // Use server-side sum which covers ALL pages, not just the current one
+      setFilteredTotal(response.totalImporte ?? 0);
     } catch {
       toast.error('Error al cargar los pagos');
       setPayments([]);
@@ -72,32 +69,32 @@ export function PaymentRegister() {
     }
   };
 
-  // Quick date filters
+  // Quick date filters — all use format() for LOCAL date (no UTC shift)
   const setToday = () => {
-    const t = new Date().toISOString().split('T')[0];
+    const t = format(new Date(), 'yyyy-MM-dd');
     setFechaDesde(t);
     setFechaHasta(t);
     setPage(1);
   };
 
   const setYesterday = () => {
-    const y = subDays(new Date(), 1).toISOString().split('T')[0];
+    const y = format(subDays(new Date(), 1), 'yyyy-MM-dd');
     setFechaDesde(y);
     setFechaHasta(y);
     setPage(1);
   };
 
   const setLast7Days = () => {
-    const from = subDays(new Date(), 7).toISOString().split('T')[0];
-    const to = new Date().toISOString().split('T')[0];
+    const from = format(subDays(new Date(), 7), 'yyyy-MM-dd');
+    const to = format(new Date(), 'yyyy-MM-dd');
     setFechaDesde(from);
     setFechaHasta(to);
     setPage(1);
   };
 
   const setThisMonth = () => {
-    const from = startOfMonth(new Date()).toISOString().split('T')[0];
-    const to = endOfMonth(new Date()).toISOString().split('T')[0];
+    const from = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+    const to = format(endOfMonth(new Date()), 'yyyy-MM-dd');
     setFechaDesde(from);
     setFechaHasta(to);
     setPage(1);
@@ -109,7 +106,7 @@ export function PaymentRegister() {
       setContracts(response.items);
       setSelectedContractId('');
       reset({
-        fechaPago: new Date().toISOString().split('T')[0],
+        fechaPago: format(new Date(), 'yyyy-MM-dd'),
         medioPago: 'Efectivo',
         tipo: 'Cuota',
       });
@@ -161,7 +158,7 @@ export function PaymentRegister() {
       <div className="glass rounded-xl p-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex gap-2">
-            <Button size="sm" variant={fechaDesde === today && fechaHasta === today ? 'primary' : 'ghost'} onClick={setToday}>
+            <Button size="sm" variant={fechaDesde === todayLocal() && fechaHasta === todayLocal() ? 'primary' : 'ghost'} onClick={setToday}>
               Hoy
             </Button>
             <Button size="sm" variant="ghost" onClick={setYesterday}>
