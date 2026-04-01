@@ -23,8 +23,6 @@ type ContractFormValues = {
   pagoInicial: string;
   meses: string;
   frecuencia: string;
-  comisionPorcentaje?: string;
-  moraPorcentaje?: string;
   clienteNombre?: string;
   clienteDni?: string;
   clienteTelefono?: string;
@@ -213,8 +211,6 @@ export function ContractList() {
         pagoInicial,
         meses: parseInt(data.meses),
         frecuencia: data.frecuencia,
-        comisionPorcentaje: data.comisionPorcentaje ? parseFloat(data.comisionPorcentaje) : 0,
-        moraPorcentaje: data.moraPorcentaje ? parseFloat(data.moraPorcentaje) : 0,
         clienteNombre: data.clienteNombre,
         clienteDni: data.clienteDni,
         clienteTelefono: data.clienteTelefono,
@@ -590,22 +586,6 @@ export function ContractList() {
               label="Frecuencia"
               options={FREQUENCY_OPTIONS}
               {...register('frecuencia')}
-            />
-            <Input
-              label="Comisión %"
-              type="number"
-              step="0.01"
-              placeholder="0"
-              error={errors.comisionPorcentaje?.message as string}
-              {...register('comisionPorcentaje')}
-            />
-            <Input
-              label="Mora % diaria"
-              type="number"
-              step="0.01"
-              placeholder="0"
-              error={errors.moraPorcentaje?.message as string}
-              {...register('moraPorcentaje')}
             />
           </div>
 
