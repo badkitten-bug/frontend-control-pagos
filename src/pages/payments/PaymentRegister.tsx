@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, RefreshCw } from 'lucide-react';
-import { paymentService, contractService } from '../../services';
+import { paymentService, contractService, cuentaService } from '../../services';
 import { Button, Input, Select, SearchableSelect, Modal } from '../../components/ui';
-import type { Payment, Contract } from '../../types';
+import type { Payment, Contract, Cuenta, TotalPorCuenta } from '../../types';
 import toast from 'react-hot-toast';
 import { parseDate } from '../../utils/date';
 import { useForm } from 'react-hook-form';
@@ -27,39 +27,44 @@ const PAYMENT_METHODS = [
 export function PaymentRegister() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [cuentas, setCuentas] = useState<Cuenta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState('');
-  
+  const [selectedCuentaId, setSelectedCuentaId] = useState('');
+
+  // Filtro por cuenta en la búsqueda
+  const [filtroCuentaId, setFiltroCuentaId] = useState('');
+
   // Date filters — use format() from date-fns for LOCAL date (avoids UTC offset on Peru UTC-5)
   const todayLocal = () => format(new Date(), 'yyyy-MM-dd');
   const [fechaDesde, setFechaDesde] = useState(todayLocal);
   const [fechaHasta, setFechaHasta] = useState(todayLocal);
   const [filteredTotal, setFilteredTotal] = useState(0);
+  const [totalesPorCuenta, setTotalesPorCuenta] = useState<TotalPorCuenta[]>([]);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
-  useEffect(() => {
-    loadPayments();
-  }, [page, fechaDesde, fechaHasta]);
-
-  const loadPayments = async () => {
+  const loadPayments = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await paymentService.getAll({ 
-        page, 
+      const params: Record<string, unknown> = {
+        page,
         limit: 20,
         fechaDesde,
-        fechaHasta, 
-      });
+        fechaHasta,
+      };
+      if (filtroCuentaId) params.cuentaId = parseInt(filtroCuentaId, 10);
+
+      const response = await paymentService.getAll(params);
       setPayments(response.items);
       setTotalPages(response.totalPages);
       setTotalItems(response.total);
-      // Use server-side sum which covers ALL pages, not just the current one
       setFilteredTotal(response.totalImporte ?? 0);
+      setTotalesPorCuenta(response.totalesPorCuenta ?? []);
     } catch {
       toast.error('Error al cargar los pagos');
       setPayments([]);
@@ -67,7 +72,15 @@ export function PaymentRegister() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, fechaDesde, fechaHasta, filtroCuentaId]);
+
+  useEffect(() => {
+    cuentaService.getAll().then(setCuentas).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadPayments();
+  }, [loadPayments]);
 
   // Quick date filters — all use format() for LOCAL date (no UTC shift)
   const setToday = () => {
@@ -105,6 +118,7 @@ export function PaymentRegister() {
       const response = await contractService.getAll({ limit: 100, estado: 'Vigente' });
       setContracts(response.items);
       setSelectedContractId('');
+      setSelectedCuentaId('');
       reset({
         fechaPago: format(new Date(), 'yyyy-MM-dd'),
         medioPago: 'Efectivo',
@@ -116,20 +130,20 @@ export function PaymentRegister() {
     }
   };
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: Record<string, string>) => {
     if (!selectedContractId) {
       toast.error('Seleccione un contrato');
       return;
     }
     try {
       await paymentService.create({
-        contractId: parseInt(selectedContractId),
+        contractId: parseInt(selectedContractId, 10),
         tipo: data.tipo,
         importe: parseFloat(data.importe),
         fechaPago: data.fechaPago,
         medioPago: data.medioPago,
         numeroOperacion: data.numeroOperacion,
-        cuentaDeposito: data.cuentaDeposito,
+        cuentaId: selectedCuentaId ? parseInt(selectedCuentaId, 10) : undefined,
         notas: data.notas,
       });
       toast.success('Pago registrado');
@@ -139,6 +153,15 @@ export function PaymentRegister() {
       toast.error(error.response?.data?.message || 'Error al registrar pago');
     }
   };
+
+  const cuentaOptions = cuentas
+    .filter((c) => c.activa)
+    .map((c) => ({ value: c.id.toString(), label: c.nombre }));
+
+  const filtroCuentaOptions = [
+    { value: '', label: 'Todas las cuentas' },
+    ...cuentas.map((c) => ({ value: c.id.toString(), label: c.nombre + (c.activa ? '' : ' (inactiva)') })),
+  ];
 
   return (
     <div className="space-y-6">
@@ -154,7 +177,7 @@ export function PaymentRegister() {
         </Button>
       </div>
 
-      {/* Date Filters */}
+      {/* Date + Account Filters */}
       <div className="glass rounded-xl p-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex gap-2">
@@ -186,6 +209,14 @@ export function PaymentRegister() {
               className="w-40"
             />
           </div>
+          {/* Filtro por cuenta */}
+          <div className="min-w-[200px]">
+            <Select
+              options={filtroCuentaOptions}
+              value={filtroCuentaId}
+              onChange={(e) => { setFiltroCuentaId(e.target.value); setPage(1); }}
+            />
+          </div>
           <Button variant="ghost" size="sm" onClick={loadPayments}>
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -210,6 +241,42 @@ export function PaymentRegister() {
         </div>
       </div>
 
+      {/* Totales por cuenta */}
+      {totalesPorCuenta.length > 0 && (
+        <div className="glass rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            Desglose por cuenta
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-700">
+                  <th className="text-left py-2 pr-4 text-slate-400 font-medium">Cuenta</th>
+                  <th className="text-right py-2 pr-4 text-slate-400 font-medium">Pagos</th>
+                  <th className="text-right py-2 text-slate-400 font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {totalesPorCuenta.map((t) => (
+                  <tr
+                    key={t.cuentaId ?? 'sin-cuenta'}
+                    className="border-b border-slate-700/30 hover:bg-slate-800/30 cursor-pointer"
+                    onClick={() => {
+                      setFiltroCuentaId(t.cuentaId ? t.cuentaId.toString() : '');
+                      setPage(1);
+                    }}
+                  >
+                    <td className="py-2 pr-4 text-white">{t.cuentaNombre}</td>
+                    <td className="py-2 pr-4 text-right text-slate-400">{t.cantidad}</td>
+                    <td className="py-2 text-right text-green-400 font-medium">S/ {t.total.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="glass rounded-xl overflow-hidden">
         <table className="w-full">
@@ -228,13 +295,13 @@ export function PaymentRegister() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
+                <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
                   Cargando...
                 </td>
               </tr>
             ) : payments.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
+                <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
                   No hay pagos en este período
                 </td>
               </tr>
@@ -269,8 +336,8 @@ export function PaymentRegister() {
                   </td>
                   <td className="px-6 py-4 text-slate-300">
                     <div>{payment.medioPago}</div>
-                    {payment.cuentaDeposito && (
-                      <div className="text-xs text-slate-500">{payment.cuentaDeposito}</div>
+                    {payment.cuenta && (
+                      <div className="text-xs text-slate-500">{payment.cuenta.nombre}</div>
                     )}
                   </td>
                   <td className="px-6 py-4 text-slate-300 text-sm">
@@ -359,18 +426,18 @@ export function PaymentRegister() {
             options={PAYMENT_METHODS}
             {...register('medioPago')}
           />
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="N° Operación"
-              placeholder="000123456"
-              {...register('numeroOperacion')}
-            />
-            <Input
-              label="Cuenta de Depósito"
-              placeholder="BCP, BBVA, etc."
-              {...register('cuentaDeposito')}
-            />
-          </div>
+          <SearchableSelect
+            label="Cuenta de depósito (opcional)"
+            placeholder="Seleccionar cuenta..."
+            options={cuentaOptions}
+            value={selectedCuentaId}
+            onChange={setSelectedCuentaId}
+          />
+          <Input
+            label="N° Operación"
+            placeholder="000123456"
+            {...register('numeroOperacion')}
+          />
           <Input
             label="Notas (opcional)"
             placeholder="Notas adicionales..."
@@ -389,4 +456,3 @@ export function PaymentRegister() {
     </div>
   );
 }
-

@@ -6,8 +6,10 @@ export const paymentService = {
     page?: number;
     limit?: number;
     contractId?: number;
+    cuentaId?: number;
     fechaDesde?: string;
     fechaHasta?: string;
+    [key: string]: unknown;
   }): Promise<PaginatedResponse<Payment>> {
     const { data } = await api.get('/payments', { params });
     return data;
@@ -36,7 +38,7 @@ export const paymentService = {
     fechaPago: string;
     medioPago: string;
     numeroOperacion?: string;
-    cuentaDeposito?: string;
+    cuentaId?: number;
     notas?: string;
   }): Promise<Payment> {
     const { data } = await api.post('/payments', payment);

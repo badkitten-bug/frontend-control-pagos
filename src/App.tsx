@@ -17,6 +17,7 @@ const ArrearsReport = lazy(() => import('./pages/reports/ArrearsReport').then(m 
 const TrafficLightReport = lazy(() => import('./pages/reports/TrafficLightReport').then(m => ({ default: m.TrafficLightReport })));
 const CarteraVivaReport = lazy(() => import('./pages/reports/CarteraVivaReport').then(m => ({ default: m.CarteraVivaReport })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const CuentaList = lazy(() => import('./pages/cuentas/CuentaList').then(m => ({ default: m.CuentaList })));
 
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-900">
@@ -45,6 +46,7 @@ function App() {
               <Route path="/reports" element={<ArrearsReport />} />
               <Route path="/reports/traffic-light" element={<TrafficLightReport />} />
               <Route path="/reports/cartera-viva" element={<CarteraVivaReport />} />
+              <Route path="/cuentas" element={<CuentaList />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
 

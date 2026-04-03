@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Plus, DollarSign, FileText, Ban, Edit2, XCircle, RefreshCw } from 'lucide-react';
-import { contractService, paymentService, subcontractService } from '../../services';
-import { Button, Input, Select, StatusBadge, Modal, ConfirmModal, Tooltip } from '../../components/ui';
+import { contractService, paymentService, subcontractService, cuentaService } from '../../services';
+import { Button, Input, Select, StatusBadge, Modal, ConfirmModal, Tooltip, SearchableSelect } from '../../components/ui';
 import { SubcontractModal } from '../../components/SubcontractModal';
-import type { Contract, PaymentSchedule, Payment, Subcontract, CreateSubcontractDto, SubcontractSchedule } from '../../types';
+import type { Contract, PaymentSchedule, Payment, Subcontract, CreateSubcontractDto, SubcontractSchedule, Cuenta } from '../../types';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { format, isBefore, startOfDay, differenceInDays } from 'date-fns';
@@ -50,6 +50,8 @@ export function ContractDetail() {
   const [editClienteDireccion, setEditClienteDireccion] = useState('');
   const [schedulePage, setSchedulePage] = useState(1);
   const PAGE_SIZE = 100;
+  const [cuentas, setCuentas] = useState<Cuenta[]>([]);
+  const [selectedCuentaId, setSelectedCuentaId] = useState('');
 
   const [confirm, setConfirm] = useState<{
     open: boolean;
@@ -65,6 +67,10 @@ export function ContractDetail() {
   const closeConfirm = () => setConfirm(c => ({ ...c, open: false }));
 
   const { register, handleSubmit, reset, formState: { isSubmitting, errors: paymentErrors } } = useForm();
+
+  useEffect(() => {
+    cuentaService.getAll(true).then(setCuentas).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -112,6 +118,7 @@ export function ContractDetail() {
       importe: scheduleItem ? scheduleItem.saldo : (defaultTipo === 'Pago Inicial' ? (contract?.pagoInicial ?? '') : ''),
       tipo: defaultTipo,
     });
+    setSelectedCuentaId('');
     setIsPaymentModalOpen(true);
   };
 
@@ -125,6 +132,7 @@ export function ContractDetail() {
         fechaPago: data.fechaPago,
         medioPago: data.medioPago,
         numeroOperacion: data.numeroOperacion,
+        cuentaId: selectedCuentaId ? parseInt(selectedCuentaId, 10) : undefined,
         notas: data.notas,
       });
       toast.success('Pago registrado');
@@ -693,6 +701,13 @@ export function ContractDetail() {
             label="Medio de Pago"
             options={PAYMENT_METHODS}
             {...register('medioPago')}
+          />
+          <SearchableSelect
+            label="Cuenta de depósito (opcional)"
+            placeholder="Seleccionar cuenta..."
+            options={cuentas.map((c) => ({ value: c.id.toString(), label: c.nombre }))}
+            value={selectedCuentaId}
+            onChange={setSelectedCuentaId}
           />
           <Input
             label="N° Operación (opcional)"

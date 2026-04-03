@@ -12,6 +12,7 @@ import {
   Wallet,
   Settings,
   Users,
+  Landmark,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -22,6 +23,7 @@ const navItems = [
   { path: '/clients', label: 'Clientes', icon: Users },
   { path: '/contracts', label: 'Contratos', icon: FileText },
   { path: '/payments', label: 'Caja', icon: CreditCard },
+  { path: '/cuentas', label: 'Cuentas', icon: Landmark },
   { path: '/reports', label: 'Atrasos', icon: BarChart3 },
   { path: '/reports/traffic-light', label: 'Semáforo', icon: CircleDot },
   { path: '/reports/cartera-viva', label: 'Cartera Viva', icon: Wallet },

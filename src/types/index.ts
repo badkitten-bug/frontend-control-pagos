@@ -86,6 +86,21 @@ export interface PaymentSchedule {
   createdAt: string;
 }
 
+// Cuenta (account) types
+export interface Cuenta {
+  id: number;
+  nombre: string;
+  activa: boolean;
+  createdAt: string;
+}
+
+export interface TotalPorCuenta {
+  cuentaId: number | null;
+  cuentaNombre: string;
+  total: number;
+  cantidad: number;
+}
+
 // Payment types
 export type PaymentType = 'Pago Inicial' | 'Cuota' | 'Abono';
 export type PaymentMethod = 'Efectivo' | 'Transferencia' | 'Yape' | 'Plin' | 'Tarjeta' | 'Otro';
@@ -100,7 +115,8 @@ export interface Payment {
   fechaPago: string;
   medioPago: PaymentMethod;
   numeroOperacion?: string;
-  cuentaDeposito?: string;
+  cuentaId?: number;
+  cuenta?: Cuenta;
   voucher?: string;
   notas?: string;
   usuarioId: number;
@@ -188,6 +204,7 @@ export interface PaginatedResponse<T> {
   limit: number;
   totalPages: number;
   totalImporte?: number;
+  totalesPorCuenta?: TotalPorCuenta[];
 }
 
 // Dashboard types
